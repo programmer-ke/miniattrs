@@ -7,7 +7,12 @@ attributes in user-defined model-like classes.
 
 ### Base Class: `Field`
 - **`__init__(self, default=None)`** — accepts an optional static
-  default value.
+  default value. The implementation internally uses a sentinel constant
+  (`_NULL`) to distinguish between “no default provided” and a
+  legitimate default of `None`. If the argument is omitted (the
+  sentinel is used), no default exists and accessing an unset attribute
+  raises `AttributeError`. Passing `None` explicitly sets the default
+  to `None`.
 - **`__set_name__(self, owner, name)`** — automatically captures the
   attribute name.
 - **`__get__(self, instance, owner)`** — returns the stored value from
@@ -39,14 +44,15 @@ attributes in user-defined model-like classes.
   `float`. Raises `ValueError` if `value < min` or `value >
   max`. Bounds are inclusive.
 
-### Compound Fields (via Inheritance)
+### Compound Fields (via Composition)
 
-#### `ListField(ParentField)`
-- Inherits from a concrete field (e.g., `ListField(IntegerField)`).
+#### `ListField`
+- Takes a concrete field instance (e.g., `ListField(IntegerField())`).
 - **`validate`**: raises `TypeError` if value is not a `list`. Then
-  calls the parent's `validate` on every element of the list. If any
-  element fails, the corresponding exception propagates.
-- Constructor accepts the same arguments as the parent field.
+  calls the encapsulated field's `validate` on every element of the
+  list. If any element fails, the corresponding exception propagates.
+- Constructor: `__init__(self, field_instance, default=None)` where
+  `field_instance` is a `Field` instance (e.g., `IntegerField()`).
 
 ### Error Handling
 - `TypeError` for type mismatches.
