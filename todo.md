@@ -5,13 +5,13 @@ captures its attribute name via `__set_name__` and stores/retrieves
 values from `instance.__dict__`, so that I can build a foundation for
 reusable validation descriptors.
 
-- [ ] Implement `Field.__init__(self, default=None)`
-- [ ] Implement `Field.__set_name__(self, owner, name)`
-- [ ] Implement `Field.__get__` returning stored value, default, or
+- [x] Implement `Field.__init__(self, default=_NULL)`
+- [x] Implement `Field.__set_name__(self, owner, name)`
+- [x] Implement `Field.__get__` returning stored value, default, or
       raising `AttributeError`
-- [ ] Implement `Field.__set__` calling `validate` then storing in
+- [x] Implement `Field.__set__` calling `validate` then storing in
       `instance.__dict__`
-- [ ] Define abstract `validate(self, value)` method raising
+- [x] Define abstract `validate(self, value)` method raising
       `NotImplementedError`
 
 ---
@@ -63,17 +63,16 @@ enforce numeric range constraints on my model attributes.
 
 ---
 
-## Task 5: Compound Field via Inheritance — `ListField(IntegerField)`
+## Task 5: Compound Field via Composition — `ListField(IntegerField())`
 
-**As a developer**, I want to define `ListField` that inherits from a
-parent field (e.g., `IntegerField`) and validates that every element
+**As a developer**, I want to define `ListField` that delegates to a
+encapsulated field (e.g., `IntegerField`) and validates that every element
 in a list passes the parent's validation, so that I can enforce typed
 lists in my model classes.
 
-- [ ] Implement `ListField(ParentField)` with `__init__` accepting
-      same args as parent
+- [ ] Implement `ListField(Field())`
 - [ ] Implement `validate` raising `TypeError` for non-`list`
-- [ ] Implement `validate` calling parent's `validate` on each element
+- [ ] Implement `validate` calling members `validate` on each element
 - [ ] Test valid list of integers
 - [ ] Test invalid list (non-list, non-integer elements)
 - [ ] Test default value behavior
@@ -87,7 +86,7 @@ types together, so that I can verify the descriptors work correctly as
 a cohesive validation layer.
 
 - [ ] Create a test model class with `IntegerField`, `StringField`,
-      `RangeField`, and `ListField(IntegerField)`
+      `RangeField`, and `ListField(IntegerField())`
 - [ ] Test setting valid values on all fields
 - [ ] Test setting invalid values on each field
 - [ ] Test default values and unset attribute access
