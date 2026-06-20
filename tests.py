@@ -20,13 +20,21 @@ def test_base_field():
     assert f._default is f._NULL
     assert f._field_name == "attr"
 
+    # __get__ should return self when called on the class
     assert f.__get__(None, Klass) is f
 
     # without a default, should raise AttributeError on access
     with pytest.raises(AttributeError):
         _ = f.__get__(instance, Klass)
 
+    # should now return the set value
+    f.__set__(instance, "assigned")
+    assert f.__get__(instance, Klass) == "assigned"
+
+    # default value is correctly set
     f = SubField(default="foobar")
+    instance = Klass()
+
     f.__set_name__(Klass, "attr")
     assert f._default == "foobar"
 

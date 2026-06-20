@@ -23,7 +23,7 @@ class Field(abc.ABC):
         if instance is None:
             return self
         value = instance.__dict__.get(self._field_name, self._default)
-        if self._default is self._NULL:
+        if value is self._NULL:
             msg = f"Attribute {self._field_name} not set"
             raise AttributeError(msg)
         return value if value is not self._default else copy.deepcopy(value)
