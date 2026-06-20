@@ -5,7 +5,7 @@ captures its attribute name via `__set_name__` and stores/retrieves
 values from `instance.__dict__`, so that I can build a foundation for
 reusable validation descriptors.
 
-- [x] Implement `Field.__init__(self, default=None)`
+- [x] Implement `Field.__init__(self, default=_NULL)`
 - [x] Implement `Field.__set_name__(self, owner, name)`
 - [x] Implement `Field.__get__` returning stored value, default, or
       raising `AttributeError`
