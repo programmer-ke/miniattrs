@@ -6,7 +6,7 @@ coercion on instance attributes. Fields are declared as class
 attributes in user-defined model-like classes.
 
 ### Base Class: `Field`
-- **`__init__(self, default=None)`** — accepts an optional static
+- **`__init__(self, default=_NULL)`** — accepts an optional static
   default value. The implementation internally uses a sentinel constant
   (`_NULL`) to distinguish between “no default provided” and a
   legitimate default of `None`. If the argument is omitted (the
