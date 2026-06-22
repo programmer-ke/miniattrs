@@ -1,5 +1,5 @@
 import pytest
-from miniattrs import Field
+from miniattrs import Field, IntegerField
 
 
 class SubField(Field):
@@ -72,3 +72,76 @@ def test_mutable_default_copied():
     # The default value on a different instance should not be the
     # same as that of the first instance
     assert second_default_value is not default_value
+
+
+def test_integer_field_raises_on_non_integer():
+
+    # given a class with an integer field
+
+    class Pet:
+        age = IntegerField()
+
+        def __init__(self, age):
+            self.age = age
+
+    # when a non integer is assigned
+    bad_values = ["2", 2.0]
+    # then a validation error is raised
+    for v in bad_values:
+        with pytest.raises(TypeError):
+            p = Pet(v)
+
+
+def test_integer_field_accepts_integer():
+
+    # given a class with an integer field
+    class Pet:
+        age = IntegerField()
+
+        def __init__(self, age):
+            self.age = age
+
+    # when an integer is assigned
+    p = Pet(2)
+
+    # then it is successfully stored and returned
+    assert p.age == 2
+
+
+def test_default_integer_value_is_honored():
+
+    # given a class with an integer field with a default
+    class Pet:
+        age = IntegerField(default=3)
+
+    # when an unnassigned attribute is returned
+    p = Pet()
+
+    # then the default is returned on access
+    assert p.age == 3
+
+
+def test_default_integer_value_can_be_overwritten():
+
+    # given a class with an integer field with a default
+    class Pet:
+        age = IntegerField(default=3)
+
+    # when a non default is set
+    p = Pet()
+    p.age = 5
+    # then the default is overriden
+    assert p.age == 5
+
+
+def test_an_incorrect_default_raises():
+
+    # given a class with an integer field and incorrect default
+    # when it is instantiated
+    # then it raises a type error
+    bad_values = ["2", 2.0]
+    for v in bad_values:
+        with pytest.raises(TypeError):
+
+            class Pet:
+                age = IntegerField(default=v)

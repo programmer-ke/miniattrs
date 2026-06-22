@@ -14,7 +14,10 @@ class Field(abc.ABC):
     _NULL = _MissingType()
 
     def __init__(self, default=_NULL):
-        self._default = default
+        if default is self._NULL:
+            self._default = default
+        else:
+            self._default = self.validate(default)
 
     def __set_name__(self, owner, name):
         self._field_name = name
@@ -35,4 +38,12 @@ class Field(abc.ABC):
     @abc.abstractmethod
     def validate(self, value):
         """Returns the validated field value"""
+        return value
+
+
+class IntegerField(Field):
+
+    def validate(self, value):
+        if not isinstance(value, int):
+            raise TypeError(f"{value!r} is not of type int")
         return value

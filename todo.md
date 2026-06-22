@@ -22,11 +22,11 @@ reusable validation descriptors.
 non-`int` values with `TypeError`, so that I can enforce integer-only
 attributes in my model classes.
 
-- [ ] Implement `IntegerField(Field)` with `validate` raising
+- [x] Implement `IntegerField(Field)` with `validate` raising
       `TypeError` for non-`int`
-- [ ] Test that valid `int` values are stored and retrieved correctly
-- [ ] Test that invalid types raise `TypeError`
-- [ ] Test default value behavior
+- [x] Test that valid `int` values are stored and retrieved correctly
+- [x] Test that invalid types raise `TypeError`
+- [x] Test default value behavior
 
 ---
 
