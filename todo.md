@@ -37,13 +37,13 @@ attributes in my model classes.
 bounds, so that I can enforce string constraints on my model
 attributes.
 
-- [ ] Implement `StringField.__init__` with `min_length=None,
+- [x] Implement `StringField.__init__` with `min_length=None,
       max_length=None`
-- [ ] Implement `validate` raising `TypeError` for non-`str`
-- [ ] Implement `validate` raising `ValueError` for length violations
+- [x] Implement `validate` raising `TypeError` for non-`str`
+- [x] Implement `validate` raising `ValueError` for length violations
       (inclusive bounds)
-- [ ] Test valid strings, type errors, and length errors
-- [ ] Test default value behavior
+- [x] Test valid strings, type errors, and length errors
+- [x] Test default value behavior
 
 ---
 
