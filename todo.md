@@ -53,15 +53,18 @@ attributes.
 non-`float` values with `TypeError`, so that I can enforce float-only
 attributes in my model classes.
 
-- [ ] Implement `FloatField(Field)` with `validate` raising
+- [x] Implement `FloatField(Field)` with `validate` raising
       `TypeError` for non-`float`
-- [ ] Test that valid `float` values are stored and retrieved correctly
-- [ ] Test that invalid types raise `TypeError`
-- [ ] Test default value behavior
+- [x] Test that valid `float` values are stored and retrieved correctly
+- [x] Test that invalid types raise `TypeError`
+- [x] Test default value behavior
 
 ---
 
-## Task 5: `RangeField` with Inclusive Numeric Bounds
+
+## Task 5: Refactor to more closely match `attrs` api
+
+## Task 6: `RangeField` with Inclusive Numeric Bounds
 
 **As a developer**, I want to use `RangeField(min, max)` that accepts
 only `int` or `float` values within inclusive bounds, so that I can
@@ -77,7 +80,7 @@ enforce numeric range constraints on my model attributes.
 
 ---
 
-## Task 6: Compound Field via Composition — `ListField(IntegerField())`
+## Task 7: Compound Field via Composition — `ListField(IntegerField())`
 
 **As a developer**, I want to define `ListField` that delegates to a
 encapsulated field (e.g., `IntegerField`) and validates that every element
@@ -93,7 +96,7 @@ lists in my model classes.
 
 ---
 
-## Task 7: Integration Test — Model Class with Multiple Fields
+## Task 8: Integration Test — Model Class with Multiple Fields
 
 **As a developer**, I want to define a model class using all field
 types together, so that I can verify the descriptors work correctly as

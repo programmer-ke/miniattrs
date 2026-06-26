@@ -1,5 +1,6 @@
 import pytest
-from miniattrs import Field, IntegerField, StringField
+import math
+from miniattrs import Field, IntegerField, StringField, FloatField
 from hypothesis import given, strategies as st
 
 
@@ -120,6 +121,15 @@ def test_default_integer_value_is_honored():
 
     # then the default is returned on access
     assert p.age == 3
+
+
+def test_default_integer_must_be_keyword():
+
+    # given a class with an integer field with a default
+    with pytest.raises(TypeError):
+
+        class Pet:
+            age = IntegerField(3)
 
 
 def test_default_integer_value_can_be_overwritten():
@@ -318,9 +328,48 @@ def test_that_stringfield_lengths_should_be_integers():
             name = StringField(min_length=2.5)
 
 
-def test_stringfield_accetps_only_keyword_arguments():
+def test_stringfield_accepts_only_keyword_arguments():
 
     with pytest.raises(TypeError):
 
         class Pet:
             name = StringField(2, 3)
+
+    with pytest.raises(TypeError):
+
+        class Pet:
+            name = StringField("hello")
+
+
+@given(st.one_of(st.integers() | st.floats() | st.text() | st.none()))
+def test_floatfield_raises_on_non_float_value(value):
+
+    class Item:
+        price = FloatField()
+
+    if not isinstance(value, float):
+
+        # Raises an error when we try to assign non integer
+        i = Item()
+        with pytest.raises(TypeError):
+            i.price = value
+
+        # Raises error with non-float default
+        with pytest.raises(TypeError):
+
+            class SomeItem:
+                price = FloatField(default=value)
+
+    elif not math.isnan(value):
+
+        # accepts float
+        i = Item()
+        i.price = value
+        assert i.price == value
+
+        # Accepts float as default value
+        class SomeItem:
+            price = FloatField(default=value)
+
+        i = SomeItem()
+        assert i.price == value
