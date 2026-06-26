@@ -45,5 +45,50 @@ class IntegerField(Field):
 
     def validate(self, value):
         if not isinstance(value, int):
-            raise TypeError(f"{value!r} is not of type int")
+            raise TypeError(f"Expected an integer, not {type(value)}")
+        return value
+
+
+class StringField(Field):
+
+    def __init__(self, *, min_length=None, max_length=None, **kwargs):
+
+        if min_length is not None and not isinstance(min_length, int):
+            raise TypeError(
+                f"Expected min_length to be type int, not {type(min_length)}"
+            )
+
+        if max_length is not None and not isinstance(max_length, int):
+            raise TypeError(
+                f"Expected max_length to be type int, not {type(max_length)}"
+            )
+
+        if (
+            min_length is not None
+            and max_length is not None
+            and min_length > max_length
+        ):
+            raise ValueError(f"min_length cannot be greater than max_length")
+        if min_length is not None and min_length < 0:
+            raise ValueError(f"min_length cannot be < 0")
+        if max_length is not None and max_length < 0:
+            raise ValueError("max_length cannot be < 0")
+
+        self._min_length = min_length
+        self._max_length = max_length
+
+        super().__init__(**kwargs)
+
+    def validate(self, value):
+        if not isinstance(value, str):
+            raise TypeError(f"Expected a string, not {type(value)}")
+
+        if self._min_length is not None and len(value) < self._min_length:
+            raise ValueError(
+                f"Expected minimum length of {self._min_length}, got {len(value)}"
+            )
+        if self._max_length is not None and len(value) > self._max_length:
+            raise ValueError(
+                f"Expected maximum length of {self._max_length}, got {len(value)}"
+            )
         return value
