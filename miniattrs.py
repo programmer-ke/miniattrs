@@ -72,7 +72,7 @@ class StringField(Field):
         if min_length is not None and min_length < 0:
             raise ValueError(f"min_length cannot be < 0")
         if max_length is not None and max_length < 0:
-            raise ValueError(f"max_length cannot be < 0")
+            raise ValueError("max_length cannot be < 0")
 
         self._min_length = min_length
         self._max_length = max_length
