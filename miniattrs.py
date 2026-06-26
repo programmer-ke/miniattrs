@@ -1,6 +1,5 @@
 """miniattrs - a collection of validation fields"""
 
-import abc
 import copy
 
 
@@ -9,11 +8,13 @@ class _MissingType:
         return "<MISSING>"
 
 
-class Field(abc.ABC):
+class Field:
 
     _NULL = _MissingType()
 
-    def __init__(self, default=_NULL):
+    field_type = object
+
+    def __init__(self, *, default=_NULL):
         if default is self._NULL:
             self._default = default
         else:
@@ -35,21 +36,29 @@ class Field(abc.ABC):
         value = self.validate(value)
         instance.__dict__[self._field_name] = value
 
-    @abc.abstractmethod
     def validate(self, value):
         """Returns the validated field value"""
+
+        if not isinstance(value, self.field_type):
+            expected_type = self.field_type.__name__
+            value_type = type(value).__name__
+            raise TypeError(
+                f"Expected type {expected_type}, instead got type {value_type}"
+            )
         return value
 
 
 class IntegerField(Field):
+    field_type = int
 
-    def validate(self, value):
-        if not isinstance(value, int):
-            raise TypeError(f"Expected an integer, not {type(value)}")
-        return value
+
+class FloatField(Field):
+    field_type = float
 
 
 class StringField(Field):
+
+    field_type = str
 
     def __init__(self, *, min_length=None, max_length=None, **kwargs):
 
@@ -80,8 +89,8 @@ class StringField(Field):
         super().__init__(**kwargs)
 
     def validate(self, value):
-        if not isinstance(value, str):
-            raise TypeError(f"Expected a string, not {type(value)}")
+
+        super().validate(value)
 
         if self._min_length is not None and len(value) < self._min_length:
             raise ValueError(
