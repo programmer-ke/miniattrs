@@ -64,6 +64,18 @@ attributes in my model classes.
 
 ## Task 5: Refactor to more closely match `attrs` api
 
+- [x] Implement core mechanics:
+  - use @define decorator for class creation
+  - Validate int type for annotated attributes
+  - automatically generate init for annotated attributes
+  - Support default values for annotated attributes
+- [ ] Support additional builtin types
+- [ ] Support explicit Field declarations
+- [ ] Support typechecking with `@dataclass_transform()`
+- [ ] Automatically generate __eq__
+- [ ] Automatically generate __repr__
+- [ ] Support Inheritance
+
 ## Task 6: `RangeField` with Inclusive Numeric Bounds
 
 **As a developer**, I want to use `RangeField(min, max)` that accepts

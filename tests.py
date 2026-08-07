@@ -1,7 +1,57 @@
 import pytest
 import math
-from miniattrs import Field, IntegerField, StringField, FloatField
+import textwrap
+from miniattrs import define, _build_init, Field
 from hypothesis import given, strategies as st
+
+
+def test_build_init_with_only_defaults():
+
+    field_names = ["age", "name"]
+
+    assert _build_init(field_names) == (
+        textwrap.dedent(
+            """
+        def __init__(self, *, age, name):
+            setattr(self, 'age', age)
+            setattr(self, 'name', name)
+        """
+        )
+    )
+
+
+def test_build_init_with_both_optional_and_defaults():
+
+    field_names = ["age", "name"]
+    optional = ["price", "weight"]
+
+    assert _build_init(field_names, optional) == (
+        textwrap.dedent(
+            """
+        def __init__(self, *, age, name, price=_MISSING, weight=_MISSING):
+            setattr(self, 'age', age)
+            setattr(self, 'name', name)
+            if price is not _MISSING: setattr(self, 'price', price)
+            if weight is not _MISSING: setattr(self, 'weight', weight)
+        """
+        )
+    )
+
+
+def test_build_init_with_only_optionals():
+
+    field_names = []
+    optional = ["price", "weight"]
+
+    assert _build_init(field_names, optional) == (
+        textwrap.dedent(
+            """
+        def __init__(self, *, price=_MISSING, weight=_MISSING):
+            if price is not _MISSING: setattr(self, 'price', price)
+            if weight is not _MISSING: setattr(self, 'weight', weight)
+        """
+        )
+    )
 
 
 class SubField(Field):
@@ -76,71 +126,110 @@ def test_mutable_default_copied():
     assert second_default_value is not default_value
 
 
-def test_integer_field_raises_on_non_integer():
+@pytest.mark.parametrize("bad_value", ["", "abc", object()])
+def test_integer_field_raises_on_non_coerceable_value(bad_value):
 
     # given a class with an integer field
 
+    @define
     class Pet:
-        age = IntegerField()
-
-        def __init__(self, age):
-            self.age = age
+        age: int
 
     # when a non integer is assigned
-    bad_values = ["2", 2.0]
     # then a validation error is raised
-    for v in bad_values:
-        with pytest.raises(TypeError):
-            p = Pet(v)
+    with pytest.raises(TypeError):
+        _ = Pet(age=bad_value)
 
 
 def test_integer_field_accepts_integer():
 
     # given a class with an integer field
+    @define
     class Pet:
-        age = IntegerField()
-
-        def __init__(self, age):
-            self.age = age
+        age: int
 
     # when an integer is assigned
-    p = Pet(2)
+    p = Pet(age=2)
 
     # then it is successfully stored and returned
     assert p.age == 2
 
 
+def test_no_annotations_raises():
+
+    # Given a class with no annotated attributes
+    # When defined
+    # then raise a type error
+    with pytest.raises(TypeError):
+
+        @define
+        class Foo:
+            pass
+
+
+def test_no_init_kwargs_raises():
+
+    # Given a class with annotated attributes
+    @define
+    class Foo:
+        bar: int
+
+    # when no init kwargs are provided
+    # Then raise a type error
+    with pytest.raises(TypeError):
+        f = Foo()
+
+
 def test_default_integer_value_is_honored():
 
     # given a class with an integer field with a default
+    @define
     class Pet:
-        age = IntegerField(default=3)
+        age: int = 3
 
-    # when an unnassigned attribute is returned
+    # when value is not provided during init
     p = Pet()
 
     # then the default is returned on access
     assert p.age == 3
 
 
-def test_default_integer_must_be_keyword():
+def test_both_optional_and_compulsory_are_handled_correctly():
+
+    # given a class with both optional and compulsory attributes
+    @define
+    class Pet:
+        weight: int
+        age: int = 3
+
+    # when compulsory is provided on init
+    p = Pet(weight=20)
+
+    # then both are set as expected
+    assert p.age == 3
+    assert p.weight == 20
+
+
+def test_default_with_explicit_field_must_be_keyword():
 
     # given a class with an integer field with a default
     with pytest.raises(TypeError):
 
+        @define
         class Pet:
-            age = IntegerField(3)
+            age: int = Field(3)
 
 
 def test_default_integer_value_can_be_overwritten():
 
     # given a class with an integer field with a default
+    @define
     class Pet:
-        age = IntegerField(default=3)
+        age: int = 3
 
     # when a non default is set
-    p = Pet()
-    p.age = 5
+    p = Pet(age=5)
+
     # then the default is overriden
     assert p.age == 5
 
@@ -154,8 +243,9 @@ def test_an_incorrect_integer_default_raises():
     for v in bad_values:
         with pytest.raises(TypeError):
 
+            @define
             class Pet:
-                age = IntegerField(default=v)
+                age: int = v
 
 
 def test_string_field_rejects_non_string():

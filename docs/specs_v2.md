@@ -10,13 +10,13 @@ data descriptors for runtime attribute access.
 ### User API
 
 ```python
-from miniattrs import define, , Integer, String
+from miniattrs import define, Field
 
 @define
 class Pet:
     name: str                              # plain str field, no extra validation beyond type
-    age: int = Integer(default=0)     # integer field with default
-    species: str = String(default="cat", min_length=1, max_length=100)
+    age: int = 0     # integer field with default
+    species: str = Field(default="cat", min_length=1, max_length=100)
 
 # Usage
 pet = Pet(name="Fido")                     # age defaults to 0, species to "cat"
@@ -31,13 +31,6 @@ print(pet == Pet("Rex"))                   # True (compares all fields)
 - A class decorator (or a decorator that can be used with/without
   arguments) that transforms an ordinary class into a validated data
   class.
-- **Parameters** (optional, may be added later):
-  - `frozen: bool = False` – if `True`, instances become immutable
-    after `__init__`.
-  - `eq: bool = True` – generate `__eq__`.
-  - `repr: bool = True` – generate `__repr__`.
-  - `init: bool = True` – generate `__init__`.
-  - `strict: bool = True` – if `False`, enable coercion (future).
 - **Type checker support**: The decorator is marked with
   `@dataclass_transform()` so that mypy/pyright understand the
   generated `__init__` and attribute types.
@@ -59,8 +52,8 @@ print(pet == Pet("Rex"))                   # True (compares all fields)
   - `String` – `field_type = str`, with optional `min_length` and
     `max_length` checks.
 - **Auto‑creation**: If an annotation has no explicit field instance
-  in the class body (e.g., `name: str`), the decorator creates a plain
-  `Field(field_type=str)` and attaches it to the class
+  in the class body (e.g., `name: str`), the decorator the
+  appropriately typed descriptor and attaches it to the class
   automatically. The descriptor’s `__set_name__` is called manually if
   needed.
 
@@ -95,15 +88,8 @@ print(pet == Pet("Rex"))                   # True (compares all fields)
   current code). A future enhancement may introduce a
   `ValidationError` with field paths.
 
-### Coercion
-- **Coercion** – attributes will be automatically coerced into the required type
-
 ### What stays the same from current `miniattrs.py`
 - The core `Field` descriptor with `__set__`/`__get__` and the `_NULL`
   sentinel.
 - Mutable defaults are deep‑copied when accessed (unless overridden in
   `__init__`).
-- Existing field subclasses (`IntegerField`, `StringField`) continue
-  to work.
-
-
