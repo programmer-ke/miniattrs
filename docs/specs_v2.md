@@ -22,7 +22,7 @@ class Pet:
 pet = Pet(name="Fido")                     # age defaults to 0, species to "cat"
 pet.name = "Rex"                           # validation runs on assignment
 print(pet)                                 # Pet(name='Rex', age=0, species='cat')
-print(pet == Pet("Rex"))                   # True (compares all fields)
+print(pet == Pet(name="Rex"))                   # True (compares all fields)
 ```
 
 ### Core Components
