@@ -123,18 +123,14 @@ class Field(Typed):
         instance.__dict__[self._field_name] = value
 
 
-_typed_classes = ((int, "Integer"),)
+_typed_classes = ((int, "Integer"), (float, "Float"), (str, "String"))
 
 
-class Integer(Field):
-    expected_type = int
+for type_, name in _typed_classes:
+    globals()[name] = type(name, (Field,), {"expected_type": type_})
 
 
-class Float:
-    expected_type = float
-
-
-class String(Field):
+class StringField(Field):
     expected_type = str
 
     def __init__(self, *, min_length=None, max_length=None, **kwargs):
