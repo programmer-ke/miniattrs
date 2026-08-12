@@ -14,7 +14,7 @@ from miniattrs import define, Field
 
 @define
 class Pet:
-    name: str                              # plain str field, no extra validation beyond type
+    name: str        # plain str field, no extra validation beyond type
     age: int = 0     # integer field with default
     species: str = Field(default="cat", min_length=1, max_length=100)
 
