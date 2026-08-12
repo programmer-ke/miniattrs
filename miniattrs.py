@@ -23,21 +23,40 @@ def define(cls):
     compulsory, optional = [], []
     for name, field_type in annotations.items():
         descriptor_kwargs = {}
+        descriptor_instance = None
+        attr_with_default = False
 
         if name in cls.__dict__:
-            descriptor_kwargs["default"] = cls.__dict__[name]
-            optional.append(name)
+            # attribute has a value in class body
+            value = cls.__dict__[name]
+            if isinstance(value, Field):
+                descriptor_instance = value
+                attr_with_default = descriptor_instance._has_default()
+            else:
+                descriptor_kwargs["default"] = value
+                attr_with_default = True
+
+            # determine whether attr is optional or not
+            if attr_with_default:
+                optional.append(name)
+            else:
+                compulsory.append(name)
         else:
+            # value missing from class body
             compulsory.append(name)
-        descriptor_instance = globals().get(typed_classes[field_type])(
-            **descriptor_kwargs
-        )
+
+        descriptor_instance = descriptor_instance or Field(**descriptor_kwargs)
+
         setattr(cls, name, descriptor_instance)
         descriptor_instance.__set_name__(cls, name)
 
+        descriptor_instance._set_type_validator(field_type, name)
+
+        if descriptor_instance._has_default():
+            descriptor_instance._validate_default()
+
     init_code = _build_init(compulsory, optional)
     cls.__init__ = _make_init(init_code)
-
     return cls
 
 
@@ -75,36 +94,42 @@ def _build_init(compulsory=None, optional=None):
     return "".join([head] + compulsory_body + optional_body)
 
 
-class Validator:
+def _validate_type(expected_type, attr_name):
+    """Creates a type validator for the attribute"""
 
-    def validate(self, value):
-        return value
-
-
-class Typed(Validator):
-    expected_type = object
-    _field_name = "typed"
-
-    def validate(self, value):
-        """Returns the validated field value"""
-
-        if not isinstance(value, self.expected_type):
-            expected_type = self.expected_type.__name__
+    def validator(value):
+        if not isinstance(value, expected_type):
+            expected_type_name = expected_type.__name__
             value_type = type(value).__name__
             raise TypeError(
-                f"{self._field_name}: expected type {expected_type}, instead got type {value_type}"
+                f"{attr_name}: expected type {expected_type_name}, instead got type {value_type}"
             )
         return value
 
+    return validator
 
-class Field(Typed):
+
+class Field:
     _NULL = _MissingType()
 
-    def __init__(self, *, default=_NULL):
-        if default is self._NULL:
-            self._default = default
-        else:
-            self._default = self.validate(default)
+    def __init__(self, *, default=_NULL, validators=()):
+        self._default = default
+        self._validators = validators
+
+    def _has_default(self):
+        return self._default != self._NULL
+
+    def _set_type_validator(self, expected_type, attr_name):
+        self._validators = (
+            _validate_type(expected_type, attr_name),
+        ) + self._validators
+
+    def _validate_default(self):
+        self.validate(self._default)
+
+    def validate(self, value):
+        for validator in self._validators:
+            validator(value)
 
     def __set_name__(self, owner, name):
         self._field_name = name
@@ -119,7 +144,7 @@ class Field(Typed):
         return value if value is not self._default else copy.deepcopy(value)
 
     def __set__(self, instance, value):
-        value = self.validate(value)
+        self.validate(value)
         instance.__dict__[self._field_name] = value
 
 
