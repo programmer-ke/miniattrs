@@ -70,7 +70,7 @@ attributes in my model classes.
   - automatically generate init for annotated attributes
   - Support default values for annotated attributes
 - [ ] Support additional builtin types
-- [ ] Support explicit Field declarations
+- [x] Support explicit Field declarations
 - [ ] Support typechecking with `@dataclass_transform()`
 - [ ] Automatically generate __eq__
 - [ ] Automatically generate __repr__

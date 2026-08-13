@@ -1,7 +1,7 @@
 import pytest
 import math
 import textwrap
-from miniattrs import define, _build_init, Field
+from miniattrs import define, _build_init, Field, validate_length
 from hypothesis import given, strategies as st
 
 
@@ -288,193 +288,218 @@ def test_string_field_accepts_strings():
     assert p.name == "tina"
 
 
-# def test_string_min_length_is_validated():
-#    # given a class with a min length string field
-#    @define
-#    class Pet:
-#        name: str = Field(min_length=2)
-#
-#    # when if a smaller length str is provided
-#    # then a value error is raised
-#    with pytest.raises(ValueError):
-#        p = Pet(name="a")
-#
-#    # when a equal or larger string is provided
-#    valid_strs = ["jo", "bob"]
-#
-#    # then the string is stored
-#    for value in valid_strs:
-#        p.name = value
-#        assert p.name == value
-#
-#
-# def test_string_max_length_is_validated():
-#    # given a class with a max length string field
-#    class Pet:
-#        name = StringField(max_length=4)
-#
-#    # when if a larger str is provided
-#    # then a value error is raised
-#    p = Pet()
-#    with pytest.raises(ValueError):
-#        p.name = "tinaturner"
-#
-#    # when a equal or smaller string is provided
-#    valid_strs = ["jo", "tina"]
-#
-#    # then the string is stored
-#    for value in valid_strs:
-#        p.name = value
-#        assert p.name == value
-#
-#
-# def test_string_field_edge_cases():
-#
-#    # Both min and max are validated
-#    class Pet:
-#        name = StringField(min_length=2, max_length=4)
-#
-#    valid_strs = ["ab", "abc", "abcd"]
-#
-#    for val in valid_strs:
-#        p = Pet()
-#        p.name = val
-#        assert p.name == val
-#
-#    invalid_strs = ["a", "abcde"]
-#    for val in invalid_strs:
-#        p = Pet()
-#        with pytest.raises(ValueError):
-#            p.name = val
-#
-#    # min length cannot be larger than max length
-#    with pytest.raises(ValueError):
-#
-#        class Pet:
-#            name = StringField(min_length=3, max_length=2)
-#
-#
-# @given(st.integers(), st.integers())
-# def test_string_field_length_behaviour(min_, max_):
-#
-#    if min_ > max_:
-#        with pytest.raises(ValueError):
-#
-#            class Pet:
-#                name = StringField(min_length=min_, max_length=max_)
-#
-#    if min_ < 0:
-#        with pytest.raises(ValueError):
-#
-#            class Pet:
-#                name = StringField(min_length=min_)
-#
-#    if max_ < 0:
-#        with pytest.raises(ValueError):
-#
-#            class Pet:
-#                name = StringField(max_length=max_)
-#
-#    if max_ == 0:
-#
-#        class Pet:
-#            name = StringField(max_length=max_)
-#
-#        p = Pet()
-#
-#        with pytest.raises(ValueError):
-#            p.name = "bob"
-#
-#        p.name = ""
-#        assert p.name == ""
-#
-#
-# @given(st.integers(), st.integers(), st.text())
-# def test_default_string_behaviour(min_, max_, text):
-#
-#    if len(text) < min_:
-#        with pytest.raises(ValueError):
-#
-#            class Pet:
-#                name = StringField(min_length=min_, default=text)
-#
-#    if len(text) > max_:
-#        with pytest.raises(ValueError):
-#
-#            class Pet:
-#                name = StringField(max_length=max_, default=text)
-#
-#    if not min_ <= len(text) <= max_:
-#        with pytest.raises(ValueError):
-#
-#            class Pet:
-#                name = StringField(min_length=min_, max_length=max_, default=text)
-#
-#    if min_ <= len(text) <= max_ and min_ >= 0:
-#
-#        class Pet:
-#            name = StringField(min_length=min_, max_length=max_, default=text)
-#
-#        p = Pet()
-#        assert p.name == text
-#
-#
-# def test_that_stringfield_lengths_should_be_integers():
-#
-#    with pytest.raises(TypeError):
-#
-#        class Pet:
-#            name = StringField(max_length="foo")
-#
-#    with pytest.raises(TypeError):
-#
-#        class Pet:
-#            name = StringField(min_length=2.5)
-#
-#
-# def test_stringfield_accepts_only_keyword_arguments():
-#
-#    with pytest.raises(TypeError):
-#
-#        class Pet:
-#            name = StringField(2, 3)
-#
-#    with pytest.raises(TypeError):
-#
-#        class Pet:
-#            name = StringField("hello")
-#
-#
-# @given(st.one_of(st.integers() | st.floats() | st.text() | st.none()))
-# def test_floatfield_raises_on_non_float_value(value):
-#
-#    class Item:
-#        price = FloatField()
-#
-#    if not isinstance(value, float):
-#
-#        # Raises an error when we try to assign non integer
-#        i = Item()
-#        with pytest.raises(TypeError):
-#            i.price = value
-#
-#        # Raises error with non-float default
-#        with pytest.raises(TypeError):
-#
-#            class SomeItem:
-#                price = FloatField(default=value)
-#
-#    elif not math.isnan(value):
-#
-#        # accepts float
-#        i = Item()
-#        i.price = value
-#        assert i.price == value
-#
-#        # Accepts float as default value
-#        class SomeItem:
-#            price = FloatField(default=value)
-#
-#        i = SomeItem()
-#        assert i.price == value
-#
+def test_string_min_length_is_validated():
+    # given a class with a min length string field
+    @define
+    class Pet:
+        name: str = Field(validators=(validate_length(min_length=2),))
+
+    # when if a smaller length str is provided
+    # then a value error is raised
+    with pytest.raises(ValueError):
+        p = Pet(name="a")
+
+    # when a equal or larger string is provided
+    valid_strs = ["jo", "bob"]
+
+    # then the string is stored
+    for value in valid_strs:
+        p = Pet(name=value)
+        assert p.name == value
+
+
+def test_string_max_length_is_validated():
+    # given a class with a max length string field
+    @define
+    class Pet:
+        name: str = Field(validators=(validate_length(max_length=4),))
+
+    # when if a larger str is provided
+    # then a value error is raised
+    with pytest.raises(ValueError):
+        _ = Pet(name="tinaturner")
+
+    # when a equal or smaller string is provided
+    valid_strs = ["jo", "tina"]
+
+    p1 = Pet(name="lu")
+    # then the string is stored
+    for value in valid_strs:
+        p1.name = value
+        assert p1.name == value
+        _ = Pet(name=value)
+
+
+def test_string_field_edge_cases():
+
+    # Both min and max are validated
+    @define
+    class Pet:
+        name: str = Field(validators=(validate_length(min_length=2, max_length=4),))
+
+    valid_strs = ["ab", "abc", "abcd"]
+
+    for val in valid_strs:
+        p = Pet(name=val)
+        assert p.name == val
+
+    for val in valid_strs:
+        p.name = val
+
+    invalid_strs = ["a", "abcde"]
+    for val in invalid_strs:
+        with pytest.raises(ValueError):
+            _ = Pet(name=val)
+
+        with pytest.raises(ValueError):
+            p.name = val
+
+    # min length cannot be larger than max length
+    with pytest.raises(ValueError):
+
+        class Pet:
+            name: str = Field(validators=(validate_length(min_length=3, max_length=2),))
+
+
+@given(st.integers(), st.integers())
+def test_string_field_length_behaviour(min_, max_):
+
+    if min_ > max_:
+        with pytest.raises(ValueError):
+
+            @define
+            class Pet:
+                name: str = Field(
+                    validators=(validate_length(min_length=min_, max_length=max_),)
+                )
+
+    if min_ < 0:
+        with pytest.raises(ValueError):
+
+            @define
+            class Pet:
+                name: str = Field(validators=(validate_length(min_length=min_),))
+
+    if max_ < 0:
+        with pytest.raises(ValueError):
+
+            @define
+            class Pet:
+                name: str = Field(validators=(validate_length(max_length=max_),))
+
+    if max_ == 0:
+
+        @define
+        class Pet:
+            name: str = Field(
+                default="", validators=(validate_length(max_length=max_),)
+            )
+
+        p = Pet()
+        with pytest.raises(ValueError):
+            p.name = "bob"
+        p.name = ""
+        assert p.name == ""
+
+
+@given(st.integers(), st.integers(), st.text())
+def test_default_string_behaviour(min_, max_, text):
+
+    # Invalid length validator parameters should raise ValueError
+    if min_ < 0 or max_ < 0 or min_ > max_:
+        with pytest.raises(ValueError):
+            validate_length(min_length=min_, max_length=max_)
+        return
+
+    if len(text) < min_:
+        with pytest.raises(ValueError):
+
+            @define
+            class Pet:
+                name: str = Field(
+                    default=text, validators=(validate_length(min_length=min_),)
+                )
+
+    if len(text) > max_:
+        with pytest.raises(ValueError):
+
+            @define
+            class Pet:
+                name: str = Field(
+                    default=text, validators=(validate_length(max_length=max_),)
+                )
+
+    if not min_ <= len(text) <= max_:
+        with pytest.raises(ValueError):
+
+            @define
+            class Pet:
+                name: str = Field(
+                    default=text,
+                    validators=(validate_length(min_length=min_, max_length=max_),),
+                )
+
+    if min_ <= len(text) <= max_:
+
+        @define
+        class Pet:
+            name: str = Field(
+                default=text,
+                validators=(validate_length(min_length=min_, max_length=max_),),
+            )
+
+        p = Pet()
+        assert p.name == text
+
+
+def test_that_stringfield_lengths_should_be_integers():
+
+    with pytest.raises(TypeError):
+        validate_length(max_length="foo")
+
+    with pytest.raises(TypeError):
+        validate_length(min_length=2.5)
+
+
+def test_stringfield_accepts_only_keyword_arguments():
+
+    with pytest.raises(TypeError):
+        validate_length(2, 3)
+
+    with pytest.raises(TypeError):
+        validate_length("hello")
+
+
+@given(st.one_of(st.integers() | st.floats() | st.text() | st.none()))
+def test_floatfield_raises_on_non_float_value(value):
+
+    @define
+    class Item:
+        price: float
+
+    if not isinstance(value, float):
+
+        # Raises an error when we try to assign a non-float
+        with pytest.raises(TypeError):
+            _ = Item(price=value)
+
+        # Raises error with non-float default
+        with pytest.raises(TypeError):
+
+            @define
+            class SomeItem:
+                price: float = value
+
+    elif not math.isnan(value):
+
+        # accepts float
+        i = Item(price=value)
+        assert i.price == value
+
+        # Accepts float as default value
+        @define
+        class SomeItem:
+            price: float = value
+
+        i = SomeItem()
+        assert i.price == value
