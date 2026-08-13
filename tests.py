@@ -1,5 +1,6 @@
 import pytest
 import math
+import decimal
 import textwrap
 from miniattrs import define, _build_init, Field, validate_length
 from hypothesis import given, strategies as st
@@ -503,3 +504,104 @@ def test_floatfield_raises_on_non_float_value(value):
 
         i = SomeItem()
         assert i.price == value
+
+
+def test_complex_field_accepts_complex():
+    @define
+    class Vector:
+        value: complex
+
+    v = Vector(value=1 + 2j)
+    assert v.value == 1 + 2j
+
+
+def test_complex_field_rejects_non_complex():
+    @define
+    class Vector:
+        value: complex
+
+    with pytest.raises(TypeError):
+        _ = Vector(value=1)
+    with pytest.raises(TypeError):
+        _ = Vector(value=1.0)
+    with pytest.raises(TypeError):
+        _ = Vector(value="1+2j")
+
+
+def test_decimal_field_accepts_decimal():
+    @define
+    class Price:
+        amount: decimal.Decimal
+
+    p = Price(amount=decimal.Decimal("1.5"))
+    assert p.amount == decimal.Decimal("1.5")
+
+
+def test_decimal_field_rejects_non_decimal():
+    @define
+    class Price:
+        amount: decimal.Decimal
+
+    with pytest.raises(TypeError):
+        _ = Price(amount=1.5)
+    with pytest.raises(TypeError):
+        _ = Price(amount=1)
+    with pytest.raises(TypeError):
+        _ = Price(amount="1.5")
+
+
+def test_list_field_accepts_list():
+    @define
+    class ShoppingList:
+        items: list
+
+    obj = ShoppingList(items=[1, 2, 3])
+    assert obj.items == [1, 2, 3]
+
+
+def test_list_field_rejects_non_list():
+    @define
+    class ShoppingList:
+        items: list
+
+    with pytest.raises(TypeError):
+        _ = ShoppingList(items=(1, 2, 3))
+    with pytest.raises(TypeError):
+        _ = ShoppingList(items="abc")
+
+
+def test_list_default_not_shared():
+    @define
+    class ShoppingList:
+        items: list = [1, 2]
+
+    a = ShoppingList()
+    b = ShoppingList()
+    assert a.items == [1, 2]
+    assert a.items is not b.items
+
+    a.items = [1, 2, 3]
+    assert a.items == [1, 2, 3]
+    assert b.items == [1, 2]
+
+
+def test_bool_field_accepts_booleans():
+    @define
+    class Flag:
+        enabled: bool
+
+    assert Flag(enabled=True).enabled is True
+    assert Flag(enabled=False).enabled is False
+
+
+def test_bool_field_rejects_non_bool():
+    @define
+    class Flag:
+        enabled: bool
+
+    with pytest.raises(TypeError):
+        _ = Flag(enabled=1)
+    with pytest.raises(TypeError):
+        _ = Flag(enabled=0)
+    with pytest.raises(TypeError):
+        _ = Flag(enabled="true")
