@@ -44,7 +44,8 @@ def define(cls):
             # value missing from class body
             compulsory.append(name)
 
-        descriptor_instance = descriptor_instance or Field(**descriptor_kwargs)
+        if descriptor_instance is None:
+            descriptor_instance = Field(**descriptor_kwargs)
 
         setattr(cls, name, descriptor_instance)
         descriptor_instance.__set_name__(cls, name)
@@ -113,7 +114,7 @@ class Field:
 
     def __init__(self, *, default=_NULL, validators=()):
         self._default = default
-        self._validators = validators
+        self._validators = tuple(validators)
 
     def _has_default(self):
         return self._default != self._NULL
