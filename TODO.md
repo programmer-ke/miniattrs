@@ -69,7 +69,7 @@ attributes in my model classes.
   - Validate int type for annotated attributes
   - automatically generate init for annotated attributes
   - Support default values for annotated attributes
-- [ ] Support additional builtin types
+- [x] Support additional builtin types
 - [x] Support explicit Field declarations
 - [ ] Support typechecking with `@dataclass_transform()`
 - [ ] Automatically generate __eq__

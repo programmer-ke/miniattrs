@@ -605,3 +605,119 @@ def test_bool_field_rejects_non_bool():
         _ = Flag(enabled=0)
     with pytest.raises(TypeError):
         _ = Flag(enabled="true")
+
+
+@given(
+    st.lists(st.integers(), min_size=0, max_size=10),
+    st.integers(min_value=0, max_value=10),
+    st.integers(min_value=0, max_value=10),
+)
+def test_list_length_validator_accepts_valid_lengths(items, min_len, max_len):
+    # Ensure min_len <= max_len for a valid validator
+    if min_len > max_len:
+        return  # skip invalid parameter combos
+
+    @define
+    class ShoppingList:
+        items: list = Field(
+            validators=(validate_length(min_length=min_len, max_length=max_len),)
+        )
+
+    if min_len <= len(items) <= max_len:
+        obj = ShoppingList(items=items)
+        assert obj.items == items
+    else:
+        with pytest.raises(ValueError):
+            _ = ShoppingList(items=items)
+
+
+@given(
+    st.lists(st.integers(), min_size=0, max_size=10),
+    st.integers(min_value=0, max_value=10),
+)
+def test_list_min_length_validator(items, min_len):
+    @define
+    class ShoppingList:
+        items: list = Field(validators=(validate_length(min_length=min_len),))
+
+    if len(items) >= min_len:
+        obj = ShoppingList(items=items)
+        assert obj.items == items
+    else:
+        with pytest.raises(ValueError):
+            _ = ShoppingList(items=items)
+
+
+@given(
+    st.lists(st.integers(), min_size=0, max_size=10),
+    st.integers(min_value=0, max_value=10),
+)
+def test_list_max_length_validator(items, max_len):
+    @define
+    class ShoppingList:
+        items: list = Field(validators=(validate_length(max_length=max_len),))
+
+    if len(items) <= max_len:
+        obj = ShoppingList(items=items)
+        assert obj.items == items
+    else:
+        with pytest.raises(ValueError):
+            _ = ShoppingList(items=items)
+
+
+@given(
+    st.lists(st.integers(), min_size=0, max_size=10),
+    st.integers(min_value=0, max_value=10),
+    st.integers(min_value=0, max_value=10),
+)
+def test_list_length_validator_on_assignment(list_items, min_len, max_len):
+    if min_len > max_len:
+        return
+
+    @define
+    class ShoppingList:
+        items: list = Field(
+            validators=(validate_length(min_length=min_len, max_length=max_len),)
+        )
+
+    if min_len <= len(list_items) <= max_len:
+        obj = ShoppingList(items=list_items)
+        assert obj.items == list_items
+    else:
+        with pytest.raises(ValueError):
+            obj = ShoppingList(items=list_items)
+
+
+@given(
+    st.lists(st.integers(), min_size=0, max_size=10),
+    st.integers(min_value=0, max_value=10),
+    st.integers(min_value=0, max_value=10),
+)
+def test_list_default_length_validator(list_items, min_len, max_len):
+    if min_len > max_len:
+        return
+
+    # Only test when the default itself is valid
+    if min_len <= len(list_items) <= max_len:
+
+        @define
+        class ShoppingList:
+            items: list = Field(
+                default=list_items,
+                validators=(validate_length(min_length=min_len, max_length=max_len),),
+            )
+
+        obj = ShoppingList()
+        assert obj.items == list_items
+    else:
+        # Default is invalid, should raise at class definition time
+        with pytest.raises(ValueError):
+
+            @define
+            class ShoppingList:
+                items: list = Field(
+                    default=list_items,
+                    validators=(
+                        validate_length(min_length=min_len, max_length=max_len),
+                    ),
+                )
