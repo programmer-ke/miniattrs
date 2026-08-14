@@ -1,7 +1,8 @@
 import pytest
 import math
+import decimal
 import textwrap
-from miniattrs import define, _build_init, Field
+from miniattrs import define, _build_init, Field, validate_length
 from hypothesis import given, strategies as st
 
 
@@ -155,6 +156,20 @@ def test_integer_field_accepts_integer():
     assert p.age == 2
 
 
+def test_float_field_accepts_float():
+
+    # given a class with an float field
+    @define
+    class Item:
+        price: float
+
+    # when an float is assigned
+    item = Item(price=2.0)
+
+    # then it is successfully stored and returned
+    assert item.price == 2.0
+
+
 def test_no_annotations_raises():
 
     # Given a class with no annotated attributes
@@ -251,85 +266,92 @@ def test_an_incorrect_integer_default_raises():
 def test_string_field_rejects_non_string():
 
     # given a class with a string field
+    @define
     class Pet:
-        name = StringField()
+        name: str
 
     # when an object is assigned a non string
-    p = Pet()
-
     # then it raises a type error
     with pytest.raises(TypeError):
-        p.name = 123
+        p = Pet(name=123)
 
 
 def test_string_field_accepts_strings():
     # given a class with a string field
+    @define
     class Pet:
-        name = StringField()
+        name: str
 
     # when an object is assigned a string
-    p = Pet()
-    p.name = "tina"
+    p = Pet(name="tina")
+
     # then it stored in the instance
     assert p.name == "tina"
 
 
 def test_string_min_length_is_validated():
     # given a class with a min length string field
+    @define
     class Pet:
-        name = StringField(min_length=2)
+        name: str = Field(validators=(validate_length(min_length=2),))
 
     # when if a smaller length str is provided
     # then a value error is raised
-    p = Pet()
     with pytest.raises(ValueError):
-        p.name = "a"
+        p = Pet(name="a")
 
     # when a equal or larger string is provided
-    valid_strs = ["jo", "bosco"]
+    valid_strs = ["jo", "bob"]
 
     # then the string is stored
     for value in valid_strs:
-        p.name = value
+        p = Pet(name=value)
         assert p.name == value
 
 
 def test_string_max_length_is_validated():
     # given a class with a max length string field
+    @define
     class Pet:
-        name = StringField(max_length=4)
+        name: str = Field(validators=(validate_length(max_length=4),))
 
     # when if a larger str is provided
     # then a value error is raised
-    p = Pet()
     with pytest.raises(ValueError):
-        p.name = "tinaturner"
+        _ = Pet(name="tinaturner")
 
     # when a equal or smaller string is provided
     valid_strs = ["jo", "tina"]
 
+    p1 = Pet(name="lu")
     # then the string is stored
     for value in valid_strs:
-        p.name = value
-        assert p.name == value
+        p1.name = value
+        assert p1.name == value
+        _ = Pet(name=value)
 
 
 def test_string_field_edge_cases():
 
     # Both min and max are validated
+    @define
     class Pet:
-        name = StringField(min_length=2, max_length=4)
+        name: str = Field(validators=(validate_length(min_length=2, max_length=4),))
 
     valid_strs = ["ab", "abc", "abcd"]
 
     for val in valid_strs:
-        p = Pet()
-        p.name = val
+        p = Pet(name=val)
         assert p.name == val
+
+    for val in valid_strs:
+        p.name = val
 
     invalid_strs = ["a", "abcde"]
     for val in invalid_strs:
-        p = Pet()
+        with pytest.raises(ValueError):
+            _ = Pet(name=val)
+
         with pytest.raises(ValueError):
             p.name = val
 
@@ -337,7 +359,7 @@ def test_string_field_edge_cases():
     with pytest.raises(ValueError):
 
         class Pet:
-            name = StringField(min_length=3, max_length=2)
+            name: str = Field(validators=(validate_length(min_length=3, max_length=2),))
 
 
 @given(st.integers(), st.integers())
@@ -346,31 +368,37 @@ def test_string_field_length_behaviour(min_, max_):
     if min_ > max_:
         with pytest.raises(ValueError):
 
+            @define
             class Pet:
-                name = StringField(min_length=min_, max_length=max_)
+                name: str = Field(
+                    validators=(validate_length(min_length=min_, max_length=max_),)
+                )
 
     if min_ < 0:
         with pytest.raises(ValueError):
 
+            @define
             class Pet:
-                name = StringField(min_length=min_)
+                name: str = Field(validators=(validate_length(min_length=min_),))
 
     if max_ < 0:
         with pytest.raises(ValueError):
 
+            @define
             class Pet:
-                name = StringField(max_length=max_)
+                name: str = Field(validators=(validate_length(max_length=max_),))
 
     if max_ == 0:
 
+        @define
         class Pet:
-            name = StringField(max_length=max_)
+            name: str = Field(
+                default="", validators=(validate_length(max_length=max_),)
+            )
 
         p = Pet()
-
         with pytest.raises(ValueError):
             p.name = "bob"
-
         p.name = ""
         assert p.name == ""
 
@@ -378,28 +406,48 @@ def test_string_field_length_behaviour(min_, max_):
 @given(st.integers(), st.integers(), st.text())
 def test_default_string_behaviour(min_, max_, text):
 
+    # Invalid length validator parameters should raise ValueError
+    if min_ < 0 or max_ < 0 or min_ > max_:
+        with pytest.raises(ValueError):
+            validate_length(min_length=min_, max_length=max_)
+        return
+
     if len(text) < min_:
         with pytest.raises(ValueError):
 
+            @define
             class Pet:
-                name = StringField(min_length=min_, default=text)
+                name: str = Field(
+                    default=text, validators=(validate_length(min_length=min_),)
+                )
 
     if len(text) > max_:
         with pytest.raises(ValueError):
 
+            @define
             class Pet:
-                name = StringField(max_length=max_, default=text)
+                name: str = Field(
+                    default=text, validators=(validate_length(max_length=max_),)
+                )
 
     if not min_ <= len(text) <= max_:
         with pytest.raises(ValueError):
 
+            @define
             class Pet:
-                name = StringField(min_length=min_, max_length=max_, default=text)
+                name: str = Field(
+                    default=text,
+                    validators=(validate_length(min_length=min_, max_length=max_),),
+                )
 
-    if min_ <= len(text) <= max_ and min_ >= 0:
+    if min_ <= len(text) <= max_:
 
+        @define
         class Pet:
-            name = StringField(min_length=min_, max_length=max_, default=text)
+            name: str = Field(
+                default=text,
+                validators=(validate_length(min_length=min_, max_length=max_),),
+            )
 
         p = Pet()
         assert p.name == text
@@ -408,58 +456,291 @@ def test_default_string_behaviour(min_, max_, text):
 def test_that_stringfield_lengths_should_be_integers():
 
     with pytest.raises(TypeError):
-
-        class Pet:
-            name = StringField(max_length="foo")
+        validate_length(max_length="foo")
 
     with pytest.raises(TypeError):
-
-        class Pet:
-            name = StringField(min_length=2.5)
+        validate_length(min_length=2.5)
 
 
 def test_stringfield_accepts_only_keyword_arguments():
 
     with pytest.raises(TypeError):
-
-        class Pet:
-            name = StringField(2, 3)
+        validate_length(2, 3)
 
     with pytest.raises(TypeError):
-
-        class Pet:
-            name = StringField("hello")
+        validate_length("hello")
 
 
 @given(st.one_of(st.integers() | st.floats() | st.text() | st.none()))
 def test_floatfield_raises_on_non_float_value(value):
 
+    @define
     class Item:
-        price = FloatField()
+        price: float
 
     if not isinstance(value, float):
 
-        # Raises an error when we try to assign non integer
-        i = Item()
+        # Raises an error when we try to assign a non-float
         with pytest.raises(TypeError):
-            i.price = value
+            _ = Item(price=value)
 
         # Raises error with non-float default
         with pytest.raises(TypeError):
 
+            @define
             class SomeItem:
-                price = FloatField(default=value)
+                price: float = value
 
     elif not math.isnan(value):
 
         # accepts float
-        i = Item()
-        i.price = value
+        i = Item(price=value)
         assert i.price == value
 
         # Accepts float as default value
+        @define
         class SomeItem:
-            price = FloatField(default=value)
+            price: float = value
 
         i = SomeItem()
         assert i.price == value
+
+
+def test_complex_field_accepts_complex():
+    @define
+    class Vector:
+        value: complex
+
+    v = Vector(value=1 + 2j)
+    assert v.value == 1 + 2j
+
+
+def test_complex_field_rejects_non_complex():
+    @define
+    class Vector:
+        value: complex
+
+    with pytest.raises(TypeError):
+        _ = Vector(value=1)
+    with pytest.raises(TypeError):
+        _ = Vector(value=1.0)
+    with pytest.raises(TypeError):
+        _ = Vector(value="1+2j")
+
+
+def test_decimal_field_accepts_decimal():
+    @define
+    class Price:
+        amount: decimal.Decimal
+
+    p = Price(amount=decimal.Decimal("1.5"))
+    assert p.amount == decimal.Decimal("1.5")
+
+
+def test_decimal_field_rejects_non_decimal():
+    @define
+    class Price:
+        amount: decimal.Decimal
+
+    with pytest.raises(TypeError):
+        _ = Price(amount=1.5)
+    with pytest.raises(TypeError):
+        _ = Price(amount=1)
+    with pytest.raises(TypeError):
+        _ = Price(amount="1.5")
+
+
+def test_list_field_accepts_list():
+    @define
+    class ShoppingList:
+        items: list
+
+    obj = ShoppingList(items=[1, 2, 3])
+    assert obj.items == [1, 2, 3]
+
+
+def test_list_field_rejects_non_list():
+    @define
+    class ShoppingList:
+        items: list
+
+    with pytest.raises(TypeError):
+        _ = ShoppingList(items=(1, 2, 3))
+    with pytest.raises(TypeError):
+        _ = ShoppingList(items="abc")
+
+
+def test_mutable_default_not_shared():
+    @define
+    class ShoppingList:
+        items: list = [1, 2]
+
+    a = ShoppingList()
+    b = ShoppingList()
+    assert a.items == [1, 2]
+    assert a.items is not b.items
+
+    a.items = [1, 2, 3]
+    assert a.items == [1, 2, 3]
+    assert b.items == [1, 2]
+
+
+def test_mutable_default_set_on_first_access():
+
+    default_items = [1, 2]
+
+    @define
+    class ShoppingList:
+        items: list = default_items
+
+    a = ShoppingList()
+    b = ShoppingList()
+    assert a.items == [1, 2]
+    assert a.items is not b.items
+
+    assert a.items is not default_items
+    a.items.append(3)
+    assert a.items == [1, 2, 3]
+
+
+def test_bool_field_accepts_booleans():
+    @define
+    class Flag:
+        enabled: bool
+
+    assert Flag(enabled=True).enabled is True
+    assert Flag(enabled=False).enabled is False
+
+
+def test_bool_field_rejects_non_bool():
+    @define
+    class Flag:
+        enabled: bool
+
+    with pytest.raises(TypeError):
+        _ = Flag(enabled=1)
+    with pytest.raises(TypeError):
+        _ = Flag(enabled=0)
+    with pytest.raises(TypeError):
+        _ = Flag(enabled="true")
+
+
+@given(
+    st.lists(st.integers(), min_size=0, max_size=10),
+    st.integers(min_value=0, max_value=10),
+    st.integers(min_value=0, max_value=10),
+)
+def test_list_length_validator_accepts_valid_lengths(items, min_len, max_len):
+    # Ensure min_len <= max_len for a valid validator
+    if min_len > max_len:
+        return  # skip invalid parameter combos
+
+    @define
+    class ShoppingList:
+        items: list = Field(
+            validators=(validate_length(min_length=min_len, max_length=max_len),)
+        )
+
+    if min_len <= len(items) <= max_len:
+        obj = ShoppingList(items=items)
+        assert obj.items == items
+    else:
+        with pytest.raises(ValueError):
+            _ = ShoppingList(items=items)
+
+
+@given(
+    st.lists(st.integers(), min_size=0, max_size=10),
+    st.integers(min_value=0, max_value=10),
+)
+def test_list_min_length_validator(items, min_len):
+    @define
+    class ShoppingList:
+        items: list = Field(validators=(validate_length(min_length=min_len),))
+
+    if len(items) >= min_len:
+        obj = ShoppingList(items=items)
+        assert obj.items == items
+    else:
+        with pytest.raises(ValueError):
+            _ = ShoppingList(items=items)
+
+
+@given(
+    st.lists(st.integers(), min_size=0, max_size=10),
+    st.integers(min_value=0, max_value=10),
+)
+def test_list_max_length_validator(items, max_len):
+    @define
+    class ShoppingList:
+        items: list = Field(validators=(validate_length(max_length=max_len),))
+
+    if len(items) <= max_len:
+        obj = ShoppingList(items=items)
+        assert obj.items == items
+    else:
+        with pytest.raises(ValueError):
+            _ = ShoppingList(items=items)
+
+
+@given(
+    st.lists(st.integers(), min_size=0, max_size=10),
+    st.integers(min_value=0, max_value=10),
+    st.integers(min_value=0, max_value=10),
+)
+def test_list_length_validator_on_assignment(list_items, min_len, max_len):
+    if min_len > max_len:
+        return
+
+    @define
+    class ShoppingList:
+        items: list = Field(
+            validators=(validate_length(min_length=min_len, max_length=max_len),)
+        )
+
+    baseline = list(range(min_len))
+    obj = ShoppingList(items=baseline)
+    assert obj.items == baseline
+
+    if min_len <= len(list_items) <= max_len:
+        obj.items = list_items
+        assert obj.items == list_items
+    else:
+        with pytest.raises(ValueError):
+            obj.items = list_items
+        assert obj.items == baseline
+
+
+@given(
+    st.lists(st.integers(), min_size=0, max_size=10),
+    st.integers(min_value=0, max_value=10),
+    st.integers(min_value=0, max_value=10),
+)
+def test_list_default_length_validator(list_items, min_len, max_len):
+    if min_len > max_len:
+        return
+
+    # Only test when the default itself is valid
+    if min_len <= len(list_items) <= max_len:
+
+        @define
+        class ShoppingList:
+            items: list = Field(
+                default=list_items,
+                validators=(validate_length(min_length=min_len, max_length=max_len),),
+            )
+
+        obj = ShoppingList()
+        assert obj.items == list_items
+    else:
+        # Default is invalid, should raise at class definition time
+        with pytest.raises(ValueError):
+
+            @define
+            class ShoppingList:
+                items: list = Field(
+                    default=list_items,
+                    validators=(
+                        validate_length(min_length=min_len, max_length=max_len),
+                    ),
+                )
