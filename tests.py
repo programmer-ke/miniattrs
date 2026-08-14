@@ -570,7 +570,7 @@ def test_list_field_rejects_non_list():
         _ = ShoppingList(items="abc")
 
 
-def test_list_default_not_shared():
+def test_mutable_default_not_shared():
     @define
     class ShoppingList:
         items: list = [1, 2]
@@ -583,6 +583,24 @@ def test_list_default_not_shared():
     a.items = [1, 2, 3]
     assert a.items == [1, 2, 3]
     assert b.items == [1, 2]
+
+
+def test_mutable_default_set_on_first_access():
+
+    default_items = [1, 2]
+
+    @define
+    class ShoppingList:
+        items: list = default_items
+
+    a = ShoppingList()
+    b = ShoppingList()
+    assert a.items == [1, 2]
+    assert a.items is not b.items
+
+    assert a.items is not default_items
+    a.items.append(3)
+    assert a.items == [1, 2, 3]
 
 
 def test_bool_field_accepts_booleans():

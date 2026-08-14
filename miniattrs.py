@@ -138,10 +138,15 @@ class Field:
         if instance is None:
             return self
         value = instance.__dict__.get(self._field_name, self._default)
+
         if value is self._NULL:
             msg = f"Attribute '{self._field_name}' not set"
             raise AttributeError(msg)
-        return value if value is not self._default else copy.deepcopy(value)
+
+        if value is self._default:
+            # Create instance copy on first access
+            value = instance.__dict__[self._field_name] = copy.deepcopy(value)
+        return value
 
     def __set__(self, instance, value):
         self.validate(value)
