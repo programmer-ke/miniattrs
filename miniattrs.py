@@ -162,9 +162,9 @@ def validate_length(*, min_length=None, max_length=None):
         raise TypeError(f"Expected max_length to be type int, not {type(max_length)}")
 
     if min_length is not None and max_length is not None and min_length > max_length:
-        raise ValueError(f"min_length cannot be greater than max_length")
+        raise ValueError("min_length cannot be greater than max_length")
     if min_length is not None and min_length < 0:
-        raise ValueError(f"min_length cannot be < 0")
+        raise ValueError("min_length cannot be < 0")
     if max_length is not None and max_length < 0:
         raise ValueError("max_length cannot be < 0")
 
