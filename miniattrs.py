@@ -117,7 +117,7 @@ class Field:
         self._validators = tuple(validators)
 
     def _has_default(self):
-        return self._default != self._NULL
+        return self._default is not self._NULL
 
     def _set_type_validator(self, expected_type, attr_name):
         self._validators = (
