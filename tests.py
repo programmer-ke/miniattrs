@@ -698,12 +698,17 @@ def test_list_length_validator_on_assignment(list_items, min_len, max_len):
             validators=(validate_length(min_length=min_len, max_length=max_len),)
         )
 
+    baseline = list(range(min_len))
+    obj = ShoppingList(items=baseline)
+    assert obj.items == baseline
+
     if min_len <= len(list_items) <= max_len:
-        obj = ShoppingList(items=list_items)
+        obj.items = list_items
         assert obj.items == list_items
     else:
         with pytest.raises(ValueError):
-            obj = ShoppingList(items=list_items)
+            obj.items = list_items
+        assert obj.items == baseline
 
 
 @given(
