@@ -13,7 +13,12 @@ _MISSING = _MissingType()
 
 
 def define(cls):
-    annotations = inspect.get_annotations(cls)
+
+    annotations = {}
+
+    for klass in reversed(cls.__mro__):
+        # walk down the inheritance chain collecting annotations
+        annotations.update(inspect.get_annotations(klass))
 
     if not annotations:
         raise TypeError("@define requires at least one annotated attribute")
@@ -24,15 +29,15 @@ def define(cls):
         descriptor_instance = None
         attr_with_default = False
 
-        if name in cls.__dict__:
-            # attribute has a value in class body
+        attr = getattr(cls, name, _MISSING)
+        if attr is not _MISSING:
+            # attribute is reachable in class bodies in the inheritance chain
             # determine whether it is a descriptor instance or actual value
-            value = cls.__dict__[name]
-            if isinstance(value, Field):
-                descriptor_instance = value
+            if isinstance(attr, Field):
+                descriptor_instance = attr
                 attr_with_default = descriptor_instance._has_default()
             else:
-                descriptor_kwargs["default"] = value
+                descriptor_kwargs["default"] = attr
                 attr_with_default = True
 
             # determine whether attr is optional or not

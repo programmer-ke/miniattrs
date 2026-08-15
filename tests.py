@@ -212,8 +212,89 @@ def test_correct_repr_generated():
     # Given an instantiated class
     p1 = Cat(name="tina", age=2)
     # when repr is output
-    assert repr(p1) == "Cat(name='tina', age=2)"
     # then it matches the expected format
+    assert repr(p1) == "Cat(name='tina', age=2)"
+
+
+def test_initializing_inherited_attributes():
+    @define
+    class Animal:
+        sound: str
+
+    @define
+    class Dog(Animal):
+        height: int
+
+    pet = Dog(sound="bark", height=2)
+
+    assert pet.sound == "bark"
+    assert pet.height == 2
+
+
+def test_initializing_overriding_inherited_attrs():
+    @define
+    class Animal:
+        sound: str = "sound"
+        weight: float = 1.0
+
+    @define
+    class Dog(Animal):
+        height: int = 2
+        sound: str = "bark"
+        weight: int = 5
+
+    pet = Dog()
+
+    assert pet.sound == "bark"
+    assert pet.height == 2
+    assert pet.weight == 5
+
+
+def test_initializing_subclass_without_annotations():
+    @define
+    class Animal:
+        sound: str = "sound"
+        weight: float = 1.0
+
+    @define
+    class Dog(Animal):
+        pass
+
+    pet = Dog()
+
+    assert pet.sound == "sound"
+    assert pet.weight == 1.0
+
+
+def test_define_in_inheritance_chain_works():
+
+    @define
+    class Animal:
+        sound: str = "sound"
+        weight: float = 1.0
+
+    class Dog(Animal):
+        pass
+
+    pet = Dog()
+
+    assert pet.sound == "sound"
+    assert pet.weight == 1.0
+
+    # Given an parent with no attr defaults
+    @define
+    class Animal:
+        sound: str
+        weight: float
+
+    # when a subclass is defined without attributes
+    class Dog(Animal):
+        pass
+
+    # then it need parent attrs at init
+    d = Dog(sound="bark", weight=2.0)
+    with pytest.raises(TypeError):
+        d = Dog()
 
 
 @pytest.mark.parametrize("bad_value", ["", "abc", object()])
