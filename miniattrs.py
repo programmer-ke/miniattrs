@@ -55,9 +55,21 @@ def define(cls):
         if descriptor_instance._has_default():
             descriptor_instance._validate_default()
 
+    field_names = compulsory + optional
     init_code = _build_init(compulsory, optional)
     cls.__init__ = _make_init(init_code)
+    cls.__eq__ = _make_eq(field_names)
     return cls
+
+
+def _make_eq(field_names):
+
+    def __eq__(self, other):
+        if isinstance(other, self.__class__):
+            return all([getattr(self, f) == getattr(other, f) for f in field_names])
+        return NotImplemented
+
+    return __eq__
 
 
 def _make_init(code):
@@ -116,29 +128,14 @@ class Field:
         self._default = default
         self._validators = tuple(validators)
 
-    def _has_default(self):
-        return self._default is not self._NULL
-
-    def _set_type_validator(self, expected_type, attr_name):
-        self._validators = (
-            _validate_type(expected_type, attr_name),
-        ) + self._validators
-
-    def _validate_default(self):
-        self.validate(self._default)
-
-    def validate(self, value):
-        for validator in self._validators:
-            validator(value)
-
     def __set_name__(self, owner, name):
         self._field_name = name
 
     def __get__(self, instance, owner):
         if instance is None:
             return self
-        value = instance.__dict__.get(self._field_name, self._default)
 
+        value = instance.__dict__.get(self._field_name, self._default)
         if value is self._NULL:
             msg = f"Attribute '{self._field_name}' not set"
             raise AttributeError(msg)
@@ -151,6 +148,21 @@ class Field:
     def __set__(self, instance, value):
         self.validate(value)
         instance.__dict__[self._field_name] = value
+
+    def validate(self, value):
+        for validator in self._validators:
+            validator(value)
+
+    def _has_default(self):
+        return self._default is not self._NULL
+
+    def _set_type_validator(self, expected_type, attr_name):
+        self._validators = (
+            _validate_type(expected_type, attr_name),
+        ) + self._validators
+
+    def _validate_default(self):
+        self.validate(self._default)
 
 
 def validate_length(*, min_length=None, max_length=None):

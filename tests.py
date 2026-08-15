@@ -127,6 +127,81 @@ def test_mutable_default_copied():
     assert second_default_value is not default_value
 
 
+def test_same_class_same_attrs_should_compare_equal():
+
+    @define
+    class Pet:
+        name: str
+        age: int
+
+    # Given instances with matching attributes
+    p1 = Pet(name="tina", age=2)
+    p2 = Pet(name="tina", age=2)
+    # when compared
+    # then they should be equal
+    assert p1 == p2
+
+
+def test_same_class_diff_attrs_should_compare_not_equal():
+
+    @define
+    class Pet:
+        name: str
+        age: int
+
+    # Given instances with different attributes
+    p1 = Pet(name="tina", age=2)
+    p2 = Pet(name="tommy", age=1)
+    # when compared
+    # then they should not be equal
+    assert p1 != p2
+
+
+def test_diff_class_same_attrs_should_compare_not_equal():
+
+    @define
+    class Cat:
+        name: str
+        age: int
+
+    @define
+    class Dog:
+        name: str
+        age: int
+
+    # Given different classes with same attributes
+    p1 = Cat(name="tina", age=2)
+    p2 = Dog(name="tina", age=2)
+    # when compared
+    # then they should not be equal
+    assert p1 != p2
+
+
+def test_diff_class_diff_attrs_should_compare_not_equal():
+
+    @define
+    class Cat:
+        name: str
+        age: int
+
+    @define
+    class Dog:
+        name: str
+        age: int
+
+    # Given different classes with same attributes
+    p1 = Cat(name="tina", age=2)
+    p2 = Dog(name="tommy", age=1)
+    # when compared
+    # then they should not be equal
+    assert p1 != p2
+
+    # compare with random objects
+    assert p1 != 123
+    assert p1 != None
+    assert p1 != object()
+
+
 @pytest.mark.parametrize("bad_value", ["", "abc", object()])
 def test_integer_field_raises_on_non_coerceable_value(bad_value):
 

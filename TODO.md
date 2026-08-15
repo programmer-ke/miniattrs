@@ -72,7 +72,7 @@ attributes in my model classes.
 - [x] Support additional builtin types
 - [x] Support explicit Field declarations
 - [ ] Support typechecking with `@dataclass_transform()`
-- [ ] Automatically generate __eq__
+- [x] Automatically generate __eq__
 - [ ] Automatically generate __repr__
 - [ ] Support Inheritance
 
