@@ -2,7 +2,7 @@ import pytest
 import math
 import decimal
 import textwrap
-from miniattrs import define, _build_init, Field, validate_length
+from miniattrs import define, _build_init, Field, validate_length, validate_range
 from hypothesis import given, strategies as st
 
 
@@ -914,3 +914,199 @@ def test_list_default_length_validator(list_items, min_len, max_len):
                         validate_length(min_length=min_len, max_length=max_len),
                     ),
                 )
+
+
+def test_range_min_value_not_comparable_raises():
+    with pytest.raises(ValueError):
+        validate_range(min_value=object())
+
+
+def test_range_max_value_not_comparable_raises():
+    with pytest.raises(ValueError):
+        validate_range(max_value=object())
+
+
+def test_range_min_greater_than_max_raises():
+    with pytest.raises(ValueError):
+        validate_range(min_value=5, max_value=3)
+
+
+def test_range_equal_bounds_allowed():
+    v = validate_range(min_value=5, max_value=5)
+    v(5)  # should not raise
+    with pytest.raises(ValueError):
+        v(4)
+    with pytest.raises(ValueError):
+        v(6)
+
+
+def test_range_unbounded_one_side():
+    v = validate_range(min_value=5)
+    v(10)  # passes
+    with pytest.raises(ValueError):
+        v(4)
+
+    v = validate_range(max_value=10)
+    v(9)  # passes
+    with pytest.raises(ValueError):
+        v(11)
+
+
+def test_range_cross_type_bounds_raises():
+    with pytest.raises((TypeError, ValueError)):
+        validate_range(min_value=1, max_value="z")
+
+
+def test_range_value_within_range_passes():
+    v = validate_range(min_value=5, max_value=10)
+    v(7)  # should not raise
+
+
+def test_range_value_at_bounds_passes():
+    v = validate_range(min_value=5, max_value=10)
+    v(5)
+    v(10)
+
+
+def test_range_non_comparable_value_raises_type_error():
+    v = validate_range(min_value=1, max_value=10)
+    with pytest.raises(TypeError):
+        v("abc")
+
+
+def test_range_strings():
+    v = validate_range(min_value="apple", max_value="pear")
+    v("banana")  # passes
+    with pytest.raises(ValueError):
+        v("aardvark")
+    with pytest.raises(ValueError):
+        v("zebra")
+
+
+def test_range_decimal():
+    import decimal
+
+    v = validate_range(
+        min_value=decimal.Decimal("0.5"), max_value=decimal.Decimal("2.5")
+    )
+    v(decimal.Decimal("1.5"))  # passes
+    with pytest.raises(ValueError):
+        v(decimal.Decimal("0.4"))
+
+
+def test_range_default_valid():
+    @define
+    class Item:
+        price: float = Field(
+            default=3.0,
+            validators=(validate_range(min_value=0.0, max_value=10.0),),
+        )
+
+    assert Item().price == 3.0
+
+
+def test_range_default_invalid_raises():
+    with pytest.raises(ValueError):
+
+        @define
+        class Item:
+            price: float = Field(
+                default=11.0,
+                validators=(validate_range(min_value=0.0, max_value=10.0),),
+            )
+
+
+def test_range_init_out_of_range_raises():
+    @define
+    class Item:
+        price: float = Field(
+            default=3.0,
+            validators=(validate_range(min_value=0.0, max_value=10.0),),
+        )
+
+    with pytest.raises(ValueError):
+        Item(price=-1.0)
+
+
+def test_range_assignment_out_of_range_raises():
+    @define
+    class Item:
+        price: float = Field(
+            default=3.0,
+            validators=(validate_range(min_value=0.0, max_value=10.0),),
+        )
+
+    item = Item(price=5.0)
+    with pytest.raises(ValueError):
+        item.price = 11.0
+
+
+def test_range_assignment_in_range_succeeds():
+    @define
+    class Item:
+        price: float = Field(
+            default=3.0,
+            validators=(validate_range(min_value=0.0, max_value=10.0),),
+        )
+
+    item = Item(price=5.0)
+    item.price = 8.0
+    assert item.price == 8.0
+
+
+def test_range_type_check_supersedes_range_check():
+    @define
+    class Item:
+        price: float = Field(
+            default=3.0,
+            validators=(validate_range(min_value=0.0, max_value=10.0),),
+        )
+
+    with pytest.raises(TypeError):
+        Item(price="not a number")
+
+
+@given(
+    st.integers(min_value=-100, max_value=100),
+    st.integers(min_value=-100, max_value=100),
+    st.integers(min_value=-100, max_value=100),
+)
+def test_range_hypothesis_accepts_inside(min_val, max_val, val):
+    if min_val > max_val:
+        return  # invalid combination tested elsewhere
+
+    v = validate_range(min_value=min_val, max_value=max_val)
+
+    if min_val <= val <= max_val:
+        v(val)  # should not raise
+    else:
+        with pytest.raises(ValueError):
+            v(val)
+
+
+@given(st.integers(), st.integers())
+def test_range_hypothesis_min_greater_than_max_raises(min_val, max_val):
+    if min_val > max_val:
+        with pytest.raises(ValueError):
+            validate_range(min_value=min_val, max_value=max_val)
+
+
+@given(st.text(min_size=1), st.text(min_size=1), st.text(min_size=1))
+def test_range_hypothesis_strings(min_str, max_str, value):
+    if min_str > max_str:
+        return
+
+    v = validate_range(min_value=min_str, max_value=max_str)
+
+    if min_str <= value <= max_str:
+        v(value)
+    else:
+        with pytest.raises(ValueError):
+            v(value)
+
+
+@given(st.one_of(st.none(), st.complex_numbers()))
+def test_range_hypothesis_invalid_bound_types(bound):
+    if not hasattr(bound, "__lt__") or not hasattr(bound, "__gt__"):
+        with pytest.raises(ValueError):
+            validate_range(min_value=bound)

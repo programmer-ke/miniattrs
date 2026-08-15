@@ -182,6 +182,7 @@ class Field:
 
 
 def validate_length(*, min_length=None, max_length=None):
+    """Creates a length validator for a field input"""
 
     if min_length is not None and not isinstance(min_length, int):
         raise TypeError(f"Expected min_length to be type int, not {type(min_length)}")
@@ -205,5 +206,61 @@ def validate_length(*, min_length=None, max_length=None):
             raise ValueError(
                 f"Expected maximum length of {max_length}, got {len(value)}"
             )
+
+    return validator
+
+
+def validate_length(*, min_length=None, max_length=None):
+    """Creates a length validator for a field input"""
+
+    if min_length is not None and not isinstance(min_length, int):
+        raise TypeError(f"Expected min_length to be type int, not {type(min_length)}")
+
+    if max_length is not None and not isinstance(max_length, int):
+        raise TypeError(f"Expected max_length to be type int, not {type(max_length)}")
+
+    if min_length is not None and max_length is not None and min_length > max_length:
+        raise ValueError("min_length cannot be greater than max_length")
+    if min_length is not None and min_length < 0:
+        raise ValueError("min_length cannot be < 0")
+    if max_length is not None and max_length < 0:
+        raise ValueError("max_length cannot be < 0")
+
+    def validator(value):
+        if min_length is not None and len(value) < min_length:
+            raise ValueError(
+                f"Expected minimum length of {min_length}, got {len(value)}"
+            )
+        if max_length is not None and len(value) > max_length:
+            raise ValueError(
+                f"Expected maximum length of {max_length}, got {len(value)}"
+            )
+
+    return validator
+
+
+def validate_range(*, min_value=None, max_value=None):
+    """Creates a range validator for a field input"""
+
+    try:
+        if min_value is not None:
+            min_value < min_value
+    except TypeError:
+        raise ValueError(f"{min_value} doesn't support ordering comparisons")
+
+    try:
+        if max_value is not None:
+            max_value < max_value
+    except TypeError:
+        raise ValueError(f"{max_value} doesn't support ordering comparisons")
+
+    if min_value is not None and max_value is not None and min_value > max_value:
+        raise ValueError("min_value cannot be greater than max_value")
+
+    def validator(value):
+        if min_value is not None and value < min_value:
+            raise ValueError(f"Expected minimum value of {min_value}, got {value}")
+        if max_value is not None and value > max_value:
+            raise ValueError(f"Expected maximum value of {max_value}, got {value}")
 
     return validator

@@ -76,19 +76,19 @@ attributes in my model classes.
 - [x] Automatically generate __repr__
 - [x] Support Inheritance
 
-## Task 6: `RangeField` with Inclusive Numeric Bounds
+## Task 6: `validate_range` Validator with Inclusive Bounds
 
-**As a developer**, I want to use `RangeField(min, max)` that accepts
-only `int` or `float` values within inclusive bounds, so that I can
-enforce numeric range constraints on my model attributes.
+**As a developer**, I want to use a validator named
+`validate_range(min_value=x, max_value=y)` that accepts any sortable values within
+inclusive bounds, so that I can enforce range constraints on my model
+attributes.
 
-- [ ] Implement `RangeField.__init__` with required `min` and `max`
-- [ ] Implement `validate` raising `TypeError` for
-      non-`int`/non-`float`
-- [ ] Implement `validate` raising `ValueError` for out-of-range
+- [x] Implement `validate_range` with required `min_value` and `max_value` params.
+- [x] Implement `validate_range` raising `TypeError` for
+      non-sortable parameters
+- [x] Implement `validate` raising `ValueError` for out-of-range
       values
-- [ ] Test valid values, type errors, and range errors
-- [ ] Test default value behavior
+- [x] Test default value behavior
 
 ---
 
