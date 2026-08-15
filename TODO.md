@@ -73,7 +73,7 @@ attributes in my model classes.
 - [x] Support explicit Field declarations
 - [ ] Support typechecking with `@dataclass_transform()`
 - [x] Automatically generate __eq__
-- [ ] Automatically generate __repr__
+- [x] Automatically generate __repr__
 - [ ] Support Inheritance
 
 ## Task 6: `RangeField` with Inclusive Numeric Bounds

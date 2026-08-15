@@ -59,7 +59,18 @@ def define(cls):
     init_code = _build_init(compulsory, optional)
     cls.__init__ = _make_init(init_code)
     cls.__eq__ = _make_eq(field_names)
+    cls.__repr__ = _make_repr(field_names)
     return cls
+
+
+def _make_repr(field_names):
+
+    def __repr__(self):
+        cls_name = type(self).__name__
+        kwargs = ", ".join([f"{f}={getattr(self, f)!r}" for f in field_names])
+        return f"{cls_name}({kwargs})"
+
+    return __repr__
 
 
 def _make_eq(field_names):

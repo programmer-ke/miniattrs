@@ -202,6 +202,20 @@ def test_diff_class_diff_attrs_should_compare_not_equal():
     assert p1 != object()
 
 
+def test_correct_repr_generated():
+
+    @define
+    class Cat:
+        name: str
+        age: int
+
+    # Given an instantiated class
+    p1 = Cat(name="tina", age=2)
+    # when repr is output
+    assert repr(p1) == "Cat(name='tina', age=2)"
+    # then it matches the expected format
+
+
 @pytest.mark.parametrize("bad_value", ["", "abc", object()])
 def test_integer_field_raises_on_non_coerceable_value(bad_value):
 
