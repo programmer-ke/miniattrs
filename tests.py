@@ -1105,8 +1105,7 @@ def test_range_hypothesis_strings(min_str, max_str, value):
             v(value)
 
 
-@given(st.one_of(st.none(), st.complex_numbers()))
+@given(st.complex_numbers())
 def test_range_hypothesis_invalid_bound_types(bound):
-    if not hasattr(bound, "__lt__") or not hasattr(bound, "__gt__"):
-        with pytest.raises(ValueError):
-            validate_range(min_value=bound)
+    with pytest.raises(ValueError):
+        validate_range(min_value=bound)
