@@ -81,7 +81,7 @@ def _make_repr(field_names):
 def _make_eq(field_names):
 
     def __eq__(self, other):
-        if isinstance(other, self.__class__):
+        if type(self) is type(other):
             return all(getattr(self, f) == getattr(other, f) for f in field_names)
         return NotImplemented
 
