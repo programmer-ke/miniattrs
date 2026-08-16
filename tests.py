@@ -2,7 +2,7 @@ import pytest
 import math
 import decimal
 import textwrap
-from miniattrs import define, _build_init, Field, validate_length
+from miniattrs import define, _build_init, Field, validate_length, validate_range
 from hypothesis import given, strategies as st
 
 
@@ -125,6 +125,189 @@ def test_mutable_default_copied():
     # The default value on a different instance should not be the
     # same as that of the first instance
     assert second_default_value is not default_value
+
+
+def test_same_class_same_attrs_should_compare_equal():
+
+    @define
+    class Pet:
+        name: str
+        age: int
+
+    # Given instances with matching attributes
+    p1 = Pet(name="tina", age=2)
+    p2 = Pet(name="tina", age=2)
+    # when compared
+    # then they should be equal
+    assert p1 == p2
+
+
+def test_same_class_diff_attrs_should_compare_not_equal():
+
+    @define
+    class Pet:
+        name: str
+        age: int
+
+    # Given instances with different attributes
+    p1 = Pet(name="tina", age=2)
+    p2 = Pet(name="tommy", age=1)
+    # when compared
+    # then they should not be equal
+    assert p1 != p2
+
+
+def test_diff_class_same_attrs_should_compare_not_equal():
+
+    @define
+    class Cat:
+        name: str
+        age: int
+
+    @define
+    class Dog:
+        name: str
+        age: int
+
+    # Given different classes with same attributes
+    p1 = Cat(name="tina", age=2)
+    p2 = Dog(name="tina", age=2)
+    # when compared
+    # then they should not be equal
+    assert p1 != p2
+
+
+def test_diff_class_diff_attrs_should_compare_not_equal():
+
+    @define
+    class Cat:
+        name: str
+        age: int
+
+    @define
+    class Dog:
+        name: str
+        age: int
+
+    # Given different classes with same attributes
+    p1 = Cat(name="tina", age=2)
+    p2 = Dog(name="tommy", age=1)
+    # when compared
+    # then they should not be equal
+    assert p1 != p2
+
+    # compare with random objects
+    assert p1 != 123
+    assert p1 is not None
+    assert p1 != object()
+
+
+def test_correct_repr_generated():
+
+    @define
+    class Cat:
+        name: str
+        age: int
+
+    # Given an instantiated class
+    p1 = Cat(name="tina", age=2)
+    # when repr is output
+    # then it matches the expected format
+    assert repr(p1) == "Cat(name='tina', age=2)"
+
+
+def test_initializing_inherited_attributes():
+    @define
+    class Animal:
+        sound: str
+
+    @define
+    class Dog(Animal):
+        height: int
+
+    pet = Dog(sound="bark", height=2)
+
+    assert pet.sound == "bark"
+    assert pet.height == 2
+
+
+def test_initializing_overriding_inherited_attrs():
+    @define
+    class Animal:
+        sound: str = "sound"
+        weight: float = 1.0
+
+    @define
+    class Dog(Animal):
+        height: int = 2
+        sound: str = "bark"
+        weight: int = 5
+
+    pet = Dog()
+
+    assert pet.sound == "bark"
+    assert pet.height == 2
+    assert pet.weight == 5
+
+
+def test_initializing_subclass_without_annotations():
+    @define
+    class Animal:
+        sound: str = "sound"
+        weight: float = 1.0
+
+    @define
+    class Dog(Animal):
+        pass
+
+    pet = Dog()
+
+    assert pet.sound == "sound"
+    assert pet.weight == 1.0
+
+
+def test_parent_default_does_not_override_child_annotation():
+    @define
+    class Animal:
+        weight: float = 1.0
+
+    @define
+    class Dog(Animal):
+        weight: int
+
+    with pytest.raises(TypeError):
+        pet = Dog()
+
+
+def test_define_in_inheritance_chain_works():
+
+    @define
+    class Animal:
+        sound: str = "sound"
+        weight: float = 1.0
+
+    class Dog(Animal):
+        pass
+
+    pet = Dog()
+
+    assert pet.sound == "sound"
+    assert pet.weight == 1.0
+
+    # Given an parent with no attr defaults
+    @define
+    class Animal:
+        sound: str
+        weight: float
+
+    # when a subclass is defined without attributes
+    class Dog(Animal):
+        pass
+
+    # then it need parent attrs at init
+    d = Dog(sound="bark", weight=2.0)
+    with pytest.raises(TypeError):
+        d = Dog()
 
 
 @pytest.mark.parametrize("bad_value", ["", "abc", object()])
@@ -744,3 +927,198 @@ def test_list_default_length_validator(list_items, min_len, max_len):
                         validate_length(min_length=min_len, max_length=max_len),
                     ),
                 )
+
+
+def test_range_min_value_not_comparable_raises():
+    with pytest.raises(ValueError):
+        validate_range(min_value=object())
+
+
+def test_range_max_value_not_comparable_raises():
+    with pytest.raises(ValueError):
+        validate_range(max_value=object())
+
+
+def test_range_min_greater_than_max_raises():
+    with pytest.raises(ValueError):
+        validate_range(min_value=5, max_value=3)
+
+
+def test_range_equal_bounds_allowed():
+    v = validate_range(min_value=5, max_value=5)
+    v(5)  # should not raise
+    with pytest.raises(ValueError):
+        v(4)
+    with pytest.raises(ValueError):
+        v(6)
+
+
+def test_range_unbounded_one_side():
+    v = validate_range(min_value=5)
+    v(10)  # passes
+    with pytest.raises(ValueError):
+        v(4)
+
+    v = validate_range(max_value=10)
+    v(9)  # passes
+    with pytest.raises(ValueError):
+        v(11)
+
+
+def test_range_cross_type_bounds_raises():
+    with pytest.raises((TypeError, ValueError)):
+        validate_range(min_value=1, max_value="z")
+
+
+def test_range_value_within_range_passes():
+    v = validate_range(min_value=5, max_value=10)
+    v(7)  # should not raise
+
+
+def test_range_value_at_bounds_passes():
+    v = validate_range(min_value=5, max_value=10)
+    v(5)
+    v(10)
+
+
+def test_range_non_comparable_value_raises_type_error():
+    v = validate_range(min_value=1, max_value=10)
+    with pytest.raises(TypeError):
+        v("abc")
+
+
+def test_range_strings():
+    v = validate_range(min_value="apple", max_value="pear")
+    v("banana")  # passes
+    with pytest.raises(ValueError):
+        v("aardvark")
+    with pytest.raises(ValueError):
+        v("zebra")
+
+
+def test_range_decimal():
+    import decimal
+
+    v = validate_range(
+        min_value=decimal.Decimal("0.5"), max_value=decimal.Decimal("2.5")
+    )
+    v(decimal.Decimal("1.5"))  # passes
+    with pytest.raises(ValueError):
+        v(decimal.Decimal("0.4"))
+
+
+def test_range_default_valid():
+    @define
+    class Item:
+        price: float = Field(
+            default=3.0,
+            validators=(validate_range(min_value=0.0, max_value=10.0),),
+        )
+
+    assert Item().price == 3.0
+
+
+def test_range_default_invalid_raises():
+    with pytest.raises(ValueError):
+
+        @define
+        class Item:
+            price: float = Field(
+                default=11.0,
+                validators=(validate_range(min_value=0.0, max_value=10.0),),
+            )
+
+
+def test_range_init_out_of_range_raises():
+    @define
+    class Item:
+        price: float = Field(
+            default=3.0,
+            validators=(validate_range(min_value=0.0, max_value=10.0),),
+        )
+
+    with pytest.raises(ValueError):
+        Item(price=-1.0)
+
+
+def test_range_assignment_out_of_range_raises():
+    @define
+    class Item:
+        price: float = Field(
+            default=3.0,
+            validators=(validate_range(min_value=0.0, max_value=10.0),),
+        )
+
+    item = Item(price=5.0)
+    with pytest.raises(ValueError):
+        item.price = 11.0
+
+
+def test_range_assignment_in_range_succeeds():
+    @define
+    class Item:
+        price: float = Field(
+            default=3.0,
+            validators=(validate_range(min_value=0.0, max_value=10.0),),
+        )
+
+    item = Item(price=5.0)
+    item.price = 8.0
+    assert item.price == 8.0
+
+
+def test_range_type_check_supersedes_range_check():
+    @define
+    class Item:
+        price: float = Field(
+            default=3.0,
+            validators=(validate_range(min_value=0.0, max_value=10.0),),
+        )
+
+    with pytest.raises(TypeError):
+        Item(price="not a number")
+
+
+@given(
+    st.integers(min_value=-100, max_value=100),
+    st.integers(min_value=-100, max_value=100),
+    st.integers(min_value=-100, max_value=100),
+)
+def test_range_hypothesis_accepts_inside(min_val, max_val, val):
+    if min_val > max_val:
+        return  # invalid combination tested elsewhere
+
+    v = validate_range(min_value=min_val, max_value=max_val)
+
+    if min_val <= val <= max_val:
+        v(val)  # should not raise
+    else:
+        with pytest.raises(ValueError):
+            v(val)
+
+
+@given(st.integers(), st.integers())
+def test_range_hypothesis_min_greater_than_max_raises(min_val, max_val):
+    if min_val > max_val:
+        with pytest.raises(ValueError):
+            validate_range(min_value=min_val, max_value=max_val)
+
+
+@given(st.text(min_size=1), st.text(min_size=1), st.text(min_size=1))
+def test_range_hypothesis_strings(min_str, max_str, value):
+    if min_str > max_str:
+        return
+
+    v = validate_range(min_value=min_str, max_value=max_str)
+
+    if min_str <= value <= max_str:
+        v(value)
+    else:
+        with pytest.raises(ValueError):
+            v(value)
+
+
+@given(st.complex_numbers())
+def test_range_hypothesis_invalid_bound_types(bound):
+    with pytest.raises(ValueError):
+        validate_range(min_value=bound)

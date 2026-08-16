@@ -13,7 +13,17 @@ _MISSING = _MissingType()
 
 
 def define(cls):
-    annotations = inspect.get_annotations(cls)
+
+    annotations, annotations_klass = {}, {}
+
+    for klass in reversed(cls.__mro__):
+        # walk down the inheritance chain collecting annotations
+        klass_annotations = inspect.get_annotations(klass)
+        annotations.update(klass_annotations)
+
+        for name in klass_annotations:
+            # For each attr, specify the most specific class
+            annotations_klass[name] = klass
 
     if not annotations:
         raise TypeError("@define requires at least one annotated attribute")
@@ -24,15 +34,16 @@ def define(cls):
         descriptor_instance = None
         attr_with_default = False
 
-        if name in cls.__dict__:
-            # attribute has a value in class body
+        most_specific_class = annotations_klass[name]
+        attr = most_specific_class.__dict__.get(name, _MISSING)
+        if attr is not _MISSING:
+            # attribute exists in the class body
             # determine whether it is a descriptor instance or actual value
-            value = cls.__dict__[name]
-            if isinstance(value, Field):
-                descriptor_instance = value
+            if isinstance(attr, Field):
+                descriptor_instance = attr
                 attr_with_default = descriptor_instance._has_default()
             else:
-                descriptor_kwargs["default"] = value
+                descriptor_kwargs["default"] = attr
                 attr_with_default = True
 
             # determine whether attr is optional or not
@@ -55,9 +66,32 @@ def define(cls):
         if descriptor_instance._has_default():
             descriptor_instance._validate_default()
 
+    field_names = compulsory + optional
     init_code = _build_init(compulsory, optional)
     cls.__init__ = _make_init(init_code)
+    cls.__eq__ = _make_eq(field_names)
+    cls.__repr__ = _make_repr(field_names)
     return cls
+
+
+def _make_repr(field_names):
+
+    def __repr__(self):
+        cls_name = type(self).__name__
+        kwargs = ", ".join([f"{f}={getattr(self, f)!r}" for f in field_names])
+        return f"{cls_name}({kwargs})"
+
+    return __repr__
+
+
+def _make_eq(field_names):
+
+    def __eq__(self, other):
+        if type(self) is type(other):
+            return all(getattr(self, f) == getattr(other, f) for f in field_names)
+        return NotImplemented
+
+    return __eq__
 
 
 def _make_init(code):
@@ -116,29 +150,14 @@ class Field:
         self._default = default
         self._validators = tuple(validators)
 
-    def _has_default(self):
-        return self._default is not self._NULL
-
-    def _set_type_validator(self, expected_type, attr_name):
-        self._validators = (
-            _validate_type(expected_type, attr_name),
-        ) + self._validators
-
-    def _validate_default(self):
-        self.validate(self._default)
-
-    def validate(self, value):
-        for validator in self._validators:
-            validator(value)
-
     def __set_name__(self, owner, name):
         self._field_name = name
 
     def __get__(self, instance, owner):
         if instance is None:
             return self
-        value = instance.__dict__.get(self._field_name, self._default)
 
+        value = instance.__dict__.get(self._field_name, self._default)
         if value is self._NULL:
             msg = f"Attribute '{self._field_name}' not set"
             raise AttributeError(msg)
@@ -152,8 +171,24 @@ class Field:
         self.validate(value)
         instance.__dict__[self._field_name] = value
 
+    def validate(self, value):
+        for validator in self._validators:
+            validator(value)
+
+    def _has_default(self):
+        return self._default is not self._NULL
+
+    def _set_type_validator(self, expected_type, attr_name):
+        self._validators = (
+            _validate_type(expected_type, attr_name),
+        ) + self._validators
+
+    def _validate_default(self):
+        self.validate(self._default)
+
 
 def validate_length(*, min_length=None, max_length=None):
+    """Creates a length validator for a field input"""
 
     if min_length is not None and not isinstance(min_length, int):
         raise TypeError(f"Expected min_length to be type int, not {type(min_length)}")
@@ -179,3 +214,32 @@ def validate_length(*, min_length=None, max_length=None):
             )
 
     return validator
+
+
+def validate_range(*, min_value=None, max_value=None):
+    """Creates a range validator for a field input"""
+
+    if min_value is not None:
+        _validate_is_comparable(min_value)
+
+    if max_value is not None:
+        _validate_is_comparable(max_value)
+
+    if min_value is not None and max_value is not None and min_value > max_value:
+        raise ValueError("min_value cannot be greater than max_value")
+
+    def validator(value):
+        if min_value is not None and value < min_value:
+            raise ValueError(f"Expected minimum value of {min_value}, got {value}")
+        if max_value is not None and value > max_value:
+            raise ValueError(f"Expected maximum value of {max_value}, got {value}")
+
+    return validator
+
+
+def _validate_is_comparable(value):
+    """Check whether the provided value supports comparisons"""
+    try:
+        value < value
+    except TypeError:
+        raise ValueError(f"{value} doesn't support ordering comparisons")
