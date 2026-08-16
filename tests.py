@@ -198,7 +198,7 @@ def test_diff_class_diff_attrs_should_compare_not_equal():
 
     # compare with random objects
     assert p1 != 123
-    assert p1 != None
+    assert p1 is not None
     assert p1 != object()
 
 
