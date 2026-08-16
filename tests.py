@@ -266,6 +266,19 @@ def test_initializing_subclass_without_annotations():
     assert pet.weight == 1.0
 
 
+def test_parent_default_does_not_override_child_annotation():
+    @define
+    class Animal:
+        weight: float = 1.0
+
+    @define
+    class Dog(Animal):
+        weight: int
+
+    with pytest.raises(TypeError):
+        pet = Dog()
+
+
 def test_define_in_inheritance_chain_works():
 
     @define

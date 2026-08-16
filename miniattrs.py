@@ -14,11 +14,16 @@ _MISSING = _MissingType()
 
 def define(cls):
 
-    annotations = {}
+    annotations, annotations_klass = {}, {}
 
     for klass in reversed(cls.__mro__):
         # walk down the inheritance chain collecting annotations
-        annotations.update(inspect.get_annotations(klass))
+        klass_annotations = inspect.get_annotations(klass)
+        annotations.update(klass_annotations)
+
+        for name in klass_annotations:
+            # For each attr, specify the most specific class
+            annotations_klass[name] = klass
 
     if not annotations:
         raise TypeError("@define requires at least one annotated attribute")
@@ -29,9 +34,10 @@ def define(cls):
         descriptor_instance = None
         attr_with_default = False
 
-        attr = getattr(cls, name, _MISSING)
+        most_specific_class = annotations_klass[name]
+        attr = most_specific_class.__dict__.get(name, _MISSING)
         if attr is not _MISSING:
-            # attribute is reachable in class bodies in the inheritance chain
+            # attribute exists in the class body
             # determine whether it is a descriptor instance or actual value
             if isinstance(attr, Field):
                 descriptor_instance = attr
