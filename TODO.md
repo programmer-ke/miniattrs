@@ -1,3 +1,8 @@
+# To Do
+
+# In progress
+
+# Done
 ## Task 1: Base `Field` Descriptor with `__set_name__` and Storage
 
 **As a developer**, I want to define a `Field` base class that
@@ -90,34 +95,19 @@ attributes.
       values
 - [x] Test default value behavior
 
----
+# Under Consideration
 
-## Task 7: Compound Field via Composition — `ListField(IntegerField())`
+## Task 7: Compound Field via Composition — `list[int]`
 
-**As a developer**, I want to define `ListField` that delegates to a
-encapsulated field (e.g., `IntegerField`) and validates that every element
+**As a developer**, I want to define `list[int]` that delegates to a
+encapsulated type (e.g., `int`) and validates that every element
 in a list passes the parent's validation, so that I can enforce typed
 lists in my model classes.
 
-- [ ] Implement `ListField(Field())`
+- [ ] Implement `list[int]`
 - [ ] Implement `validate` raising `TypeError` for non-`list`
 - [ ] Implement `validate` calling members `validate` on each element
 - [ ] Test valid list of integers
 - [ ] Test invalid list (non-list, non-integer elements)
 - [ ] Test default value behavior
 
----
-
-## Task 8: Integration Test — Model Class with Multiple Fields
-
-**As a developer**, I want to define a model class using all field
-types together, so that I can verify the descriptors work correctly as
-a cohesive validation layer.
-
-- [ ] Create a test model class with `IntegerField`, `StringField`,
-      `RangeField`, and `ListField(IntegerField())`
-- [ ] Test setting valid values on all fields
-- [ ] Test setting invalid values on each field
-- [ ] Test default values and unset attribute access
-- [ ] Test that fields are independent (setting one doesn't affect
-      others)
