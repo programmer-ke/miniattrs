@@ -2,11 +2,8 @@
 
 # In progress
 
-## Task 8
-
-- [ ] Support typechecking with `@dataclass_transform()`
-
 # Done
+
 ## Task 1: Base `Field` Descriptor with `__set_name__` and Storage
 
 **As a developer**, I want to define a `Field` base class that
@@ -97,6 +94,10 @@ attributes.
 - [x] Implement `validate` raising `ValueError` for out-of-range
       values
 - [x] Test default value behavior
+
+## Task 8
+
+- [x] Support typechecking with `@dataclass_transform()`
 
 # Under Consideration
 

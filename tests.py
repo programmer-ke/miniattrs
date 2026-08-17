@@ -2,7 +2,7 @@ import pytest
 import math
 import decimal
 import textwrap
-from miniattrs import define, _build_init, Field, validate_length, validate_range
+from miniattrs import define, _build_init, Field, field, validate_length, validate_range
 from hypothesis import given, strategies as st
 
 
@@ -415,7 +415,7 @@ def test_default_with_explicit_field_must_be_keyword():
 
         @define
         class Pet:
-            age: int = Field(3)
+            age: int = field(3)
 
 
 def test_default_integer_value_can_be_overwritten():
@@ -476,7 +476,7 @@ def test_string_min_length_is_validated():
     # given a class with a min length string field
     @define
     class Pet:
-        name: str = Field(validators=(validate_length(min_length=2),))
+        name: str = field(validators=(validate_length(min_length=2),))
 
     # when if a smaller length str is provided
     # then a value error is raised
@@ -496,7 +496,7 @@ def test_string_max_length_is_validated():
     # given a class with a max length string field
     @define
     class Pet:
-        name: str = Field(validators=(validate_length(max_length=4),))
+        name: str = field(validators=(validate_length(max_length=4),))
 
     # when if a larger str is provided
     # then a value error is raised
@@ -519,7 +519,7 @@ def test_string_field_edge_cases():
     # Both min and max are validated
     @define
     class Pet:
-        name: str = Field(validators=(validate_length(min_length=2, max_length=4),))
+        name: str = field(validators=(validate_length(min_length=2, max_length=4),))
 
     valid_strs = ["ab", "abc", "abcd"]
 
@@ -542,7 +542,7 @@ def test_string_field_edge_cases():
     with pytest.raises(ValueError):
 
         class Pet:
-            name: str = Field(validators=(validate_length(min_length=3, max_length=2),))
+            name: str = field(validators=(validate_length(min_length=3, max_length=2),))
 
 
 @given(st.integers(), st.integers())
@@ -553,7 +553,7 @@ def test_string_field_length_behaviour(min_, max_):
 
             @define
             class Pet:
-                name: str = Field(
+                name: str = field(
                     validators=(validate_length(min_length=min_, max_length=max_),)
                 )
 
@@ -562,20 +562,20 @@ def test_string_field_length_behaviour(min_, max_):
 
             @define
             class Pet:
-                name: str = Field(validators=(validate_length(min_length=min_),))
+                name: str = field(validators=(validate_length(min_length=min_),))
 
     if max_ < 0:
         with pytest.raises(ValueError):
 
             @define
             class Pet:
-                name: str = Field(validators=(validate_length(max_length=max_),))
+                name: str = field(validators=(validate_length(max_length=max_),))
 
     if max_ == 0:
 
         @define
         class Pet:
-            name: str = Field(
+            name: str = field(
                 default="", validators=(validate_length(max_length=max_),)
             )
 
@@ -600,7 +600,7 @@ def test_default_string_behaviour(min_, max_, text):
 
             @define
             class Pet:
-                name: str = Field(
+                name: str = field(
                     default=text, validators=(validate_length(min_length=min_),)
                 )
 
@@ -609,7 +609,7 @@ def test_default_string_behaviour(min_, max_, text):
 
             @define
             class Pet:
-                name: str = Field(
+                name: str = field(
                     default=text, validators=(validate_length(max_length=max_),)
                 )
 
@@ -618,7 +618,7 @@ def test_default_string_behaviour(min_, max_, text):
 
             @define
             class Pet:
-                name: str = Field(
+                name: str = field(
                     default=text,
                     validators=(validate_length(min_length=min_, max_length=max_),),
                 )
@@ -627,7 +627,7 @@ def test_default_string_behaviour(min_, max_, text):
 
         @define
         class Pet:
-            name: str = Field(
+            name: str = field(
                 default=text,
                 validators=(validate_length(min_length=min_, max_length=max_),),
             )
@@ -820,7 +820,7 @@ def test_list_length_validator_accepts_valid_lengths(items, min_len, max_len):
 
     @define
     class ShoppingList:
-        items: list = Field(
+        items: list = field(
             validators=(validate_length(min_length=min_len, max_length=max_len),)
         )
 
@@ -839,7 +839,7 @@ def test_list_length_validator_accepts_valid_lengths(items, min_len, max_len):
 def test_list_min_length_validator(items, min_len):
     @define
     class ShoppingList:
-        items: list = Field(validators=(validate_length(min_length=min_len),))
+        items: list = field(validators=(validate_length(min_length=min_len),))
 
     if len(items) >= min_len:
         obj = ShoppingList(items=items)
@@ -856,7 +856,7 @@ def test_list_min_length_validator(items, min_len):
 def test_list_max_length_validator(items, max_len):
     @define
     class ShoppingList:
-        items: list = Field(validators=(validate_length(max_length=max_len),))
+        items: list = field(validators=(validate_length(max_length=max_len),))
 
     if len(items) <= max_len:
         obj = ShoppingList(items=items)
@@ -877,7 +877,7 @@ def test_list_length_validator_on_assignment(list_items, min_len, max_len):
 
     @define
     class ShoppingList:
-        items: list = Field(
+        items: list = field(
             validators=(validate_length(min_length=min_len, max_length=max_len),)
         )
 
@@ -908,7 +908,7 @@ def test_list_default_length_validator(list_items, min_len, max_len):
 
         @define
         class ShoppingList:
-            items: list = Field(
+            items: list = field(
                 default=list_items,
                 validators=(validate_length(min_length=min_len, max_length=max_len),),
             )
@@ -921,7 +921,7 @@ def test_list_default_length_validator(list_items, min_len, max_len):
 
             @define
             class ShoppingList:
-                items: list = Field(
+                items: list = field(
                     default=list_items,
                     validators=(
                         validate_length(min_length=min_len, max_length=max_len),
@@ -1010,7 +1010,7 @@ def test_range_decimal():
 def test_range_default_valid():
     @define
     class Item:
-        price: float = Field(
+        price: float = field(
             default=3.0,
             validators=(validate_range(min_value=0.0, max_value=10.0),),
         )
@@ -1023,7 +1023,7 @@ def test_range_default_invalid_raises():
 
         @define
         class Item:
-            price: float = Field(
+            price: float = field(
                 default=11.0,
                 validators=(validate_range(min_value=0.0, max_value=10.0),),
             )
@@ -1032,7 +1032,7 @@ def test_range_default_invalid_raises():
 def test_range_init_out_of_range_raises():
     @define
     class Item:
-        price: float = Field(
+        price: float = field(
             default=3.0,
             validators=(validate_range(min_value=0.0, max_value=10.0),),
         )
@@ -1044,7 +1044,7 @@ def test_range_init_out_of_range_raises():
 def test_range_assignment_out_of_range_raises():
     @define
     class Item:
-        price: float = Field(
+        price: float = field(
             default=3.0,
             validators=(validate_range(min_value=0.0, max_value=10.0),),
         )
@@ -1057,7 +1057,7 @@ def test_range_assignment_out_of_range_raises():
 def test_range_assignment_in_range_succeeds():
     @define
     class Item:
-        price: float = Field(
+        price: float = field(
             default=3.0,
             validators=(validate_range(min_value=0.0, max_value=10.0),),
         )
@@ -1070,7 +1070,7 @@ def test_range_assignment_in_range_succeeds():
 def test_range_type_check_supersedes_range_check():
     @define
     class Item:
-        price: float = Field(
+        price: float = field(
             default=3.0,
             validators=(validate_range(min_value=0.0, max_value=10.0),),
         )

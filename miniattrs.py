@@ -1,7 +1,20 @@
-"""miniattrs - a minimal validation dataclass"""
+"""miniattrs - a minimal runtime validation dataclass"""
 
 import copy
 import inspect
+import sys
+
+
+if sys.version_info < (3, 11):
+    # dummy dataclass transform - not supported
+    def dataclass_transform(*args, **kwargs):
+        def decorator(func):
+            return func
+
+        return decorator
+
+else:
+    from typing import dataclass_transform
 
 
 class _MissingType:
@@ -12,6 +25,22 @@ class _MissingType:
 _MISSING = _MissingType()
 
 
+def field(*args, **kwargs):
+    """A function wrapper around a Field
+
+    This is necessary because `dataclass_transform` is designed
+    to match semantics of built-in dataclasses, so we need a
+    function specified as a parameter to `field_specifiers`.
+
+    The spec as of date is misleading, because according to it
+    `Field` as a field specifier should be sufficient.
+
+    See: https://discuss.python.org/t/using-classes-as-dataclass-transform-field-specifiers/46459
+    """
+    return Field(*args, **kwargs)
+
+
+@dataclass_transform(field_specifiers=(field,), kw_only_default=True)
 def define(cls):
 
     annotations, annotations_klass = {}, {}
@@ -56,7 +85,7 @@ def define(cls):
             compulsory.append(name)
 
         if descriptor_instance is None:
-            descriptor_instance = Field(**descriptor_kwargs)
+            descriptor_instance = field(**descriptor_kwargs)
 
         setattr(cls, name, descriptor_instance)
         descriptor_instance.__set_name__(cls, name)
@@ -72,6 +101,50 @@ def define(cls):
     cls.__eq__ = _make_eq(field_names)
     cls.__repr__ = _make_repr(field_names)
     return cls
+
+
+class Field:
+    _NULL = _MissingType()
+
+    def __init__(self, *, default=_NULL, validators=()):
+        self._default = default
+        self._validators = tuple(validators)
+
+    def __set_name__(self, owner, name):
+        self._field_name = name
+
+    def __get__(self, instance, owner):
+        if instance is None:
+            return self
+
+        value = instance.__dict__.get(self._field_name, self._default)
+        if value is self._NULL:
+            msg = f"Attribute '{self._field_name}' not set"
+            raise AttributeError(msg)
+
+        if value is self._default:
+            # Create instance copy on first access
+            value = instance.__dict__[self._field_name] = copy.deepcopy(value)
+        return value
+
+    def __set__(self, instance, value):
+        self.validate(value)
+        instance.__dict__[self._field_name] = value
+
+    def validate(self, value):
+        for validator in self._validators:
+            validator(value)
+
+    def _has_default(self):
+        return self._default is not self._NULL
+
+    def _set_type_validator(self, expected_type, attr_name):
+        self._validators = (
+            _validate_type(expected_type, attr_name),
+        ) + self._validators
+
+    def _validate_default(self):
+        self.validate(self._default)
 
 
 def _make_repr(field_names):
@@ -141,50 +214,6 @@ def _validate_type(expected_type, attr_name):
         return value
 
     return validator
-
-
-class Field:
-    _NULL = _MissingType()
-
-    def __init__(self, *, default=_NULL, validators=()):
-        self._default = default
-        self._validators = tuple(validators)
-
-    def __set_name__(self, owner, name):
-        self._field_name = name
-
-    def __get__(self, instance, owner):
-        if instance is None:
-            return self
-
-        value = instance.__dict__.get(self._field_name, self._default)
-        if value is self._NULL:
-            msg = f"Attribute '{self._field_name}' not set"
-            raise AttributeError(msg)
-
-        if value is self._default:
-            # Create instance copy on first access
-            value = instance.__dict__[self._field_name] = copy.deepcopy(value)
-        return value
-
-    def __set__(self, instance, value):
-        self.validate(value)
-        instance.__dict__[self._field_name] = value
-
-    def validate(self, value):
-        for validator in self._validators:
-            validator(value)
-
-    def _has_default(self):
-        return self._default is not self._NULL
-
-    def _set_type_validator(self, expected_type, attr_name):
-        self._validators = (
-            _validate_type(expected_type, attr_name),
-        ) + self._validators
-
-    def _validate_default(self):
-        self.validate(self._default)
 
 
 def validate_length(*, min_length=None, max_length=None):
