@@ -2,6 +2,10 @@
 
 # In progress
 
+## Task 8
+
+- [ ] Support typechecking with `@dataclass_transform()`
+
 # Done
 ## Task 1: Base `Field` Descriptor with `__set_name__` and Storage
 
@@ -76,7 +80,6 @@ attributes in my model classes.
   - Support default values for annotated attributes
 - [x] Support additional builtin types
 - [x] Support explicit Field declarations
-- [ ] Support typechecking with `@dataclass_transform()`
 - [x] Automatically generate __eq__
 - [x] Automatically generate __repr__
 - [x] Support Inheritance

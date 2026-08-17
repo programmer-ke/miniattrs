@@ -1,4 +1,4 @@
-"""miniattrs - a collection of validation fields"""
+"""miniattrs - a minimal validation dataclass"""
 
 import copy
 import inspect
