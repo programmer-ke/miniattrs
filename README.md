@@ -1,13 +1,13 @@
-# miniattrs - A minimal validation dataclass
+# miniattrs - A minimal validation Data Class
 
 miniattrs is a lightweight, zero dependency and pure Python validation
 utility.
 
-It allows your to define a dataclass with type annotations that are
+It allows your to define a data class with type annotations that are
 validated at runtime in addition to being checked statically (the
 latter requires Python >= 3.11).
 
-This is useful where you need a dataclass-like functionality with
+This is useful where you need a data class-like functionality with
 runtime validation that can easily be vendored into your project.
 
 ## Usage
