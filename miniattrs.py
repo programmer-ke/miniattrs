@@ -1,4 +1,14 @@
-"""miniattrs - a minimal runtime validation dataclass"""
+"""miniattrs - a minimal runtime validation dataclass
+
+>>> from miniattrs import define
+>>>
+>>> @define
+... class Pet:
+...   name: str
+...   age: int
+...
+>>> tina = Pet(name='tina', age=2)
+"""
 
 import copy
 import inspect
@@ -26,7 +36,7 @@ _MISSING = _MissingType()
 
 
 def field(*args, **kwargs):
-    """A function wrapper around a Field
+    """A function wrapper around `Field`
 
     This is necessary because `dataclass_transform` is designed
     to match semantics of built-in dataclasses, so we need a
@@ -42,6 +52,11 @@ def field(*args, **kwargs):
 
 @dataclass_transform(field_specifiers=(field,), kw_only_default=True)
 def define(cls):
+    """A class decorator that turns a class' type annototations into type validators
+
+    Each annotated attribute becomes a `Field` descriptor that validates that values are of the
+    associated type at runtime.
+    """
 
     annotations, annotations_klass = {}, {}
 
@@ -104,6 +119,8 @@ def define(cls):
 
 
 class Field:
+    """A validating descriptor"""
+
     _NULL = _MissingType()
 
     def __init__(self, *, default=_NULL, validators=()):
@@ -148,6 +165,7 @@ class Field:
 
 
 def _make_repr(field_names):
+    """Creates a __repr__ based on the provided class attributes"""
 
     def __repr__(self):
         cls_name = type(self).__name__
@@ -158,6 +176,7 @@ def _make_repr(field_names):
 
 
 def _make_eq(field_names):
+    """Creates an __eq__ based on comparison of the provided attributes"""
 
     def __eq__(self, other):
         if type(self) is type(other):
@@ -168,13 +187,14 @@ def _make_eq(field_names):
 
 
 def _make_init(code):
+    """Creates an __init__ using the provided Python code"""
     namespace = {"_MISSING": _MISSING}
     exec(code, namespace)
     return namespace["__init__"]
 
 
 def _build_init(compulsory=None, optional=None):
-    """Creates __init__ based on provided keyword arguments"""
+    """Generates __init__ code using the provided keyword arguments"""
 
     if not (compulsory or optional):
         raise ValueError(f"Expected compulsory or optional init parameters")
