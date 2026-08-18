@@ -176,7 +176,7 @@ attribute whenever it is set on an instance.
 
 ## Installation
 
-Simply drop [miniattrs.py](miniattrs.py) in your project wherever
+Simply drop [miniattrs.py](miniattrs.py) into your project wherever
 convenient and import `define` to start defining your classes.
 
 ## License
